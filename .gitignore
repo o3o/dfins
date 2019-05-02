@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/dfins
+dfins.so
+dfins.dylib
+dfins.dll
+dfins.a
+dfins.lib
+dfins-test-*
+*.exe
+*.o
+*.obj
+*.lst

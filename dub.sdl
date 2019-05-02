@@ -1,0 +1,5 @@
+name "dfins"
+description "D library for Omron FINS protocol"
+authors "Orfeo Da Viá"
+copyright "Copyright © 2019, Orfeo Da Viá"
+license "Boost"
