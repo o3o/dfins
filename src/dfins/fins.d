@@ -2,6 +2,22 @@ module dfins.fins;
 
 import dfins.channel;
 
+
+class FinsException : Exception {
+   this(ubyte mainCode, ubyte subCode, string file = null, size_t line = 0) @trusted {
+      _mainCode = mainCode;
+      _subCode = subCode;
+      import std.string : format;
+      super("Fins error %s", mainErrToString(_mainCode));
+   }
+
+   private ubyte _mainCode;
+   ubyte mainCode() { return _mainCode; }
+
+   private ubyte _subCode;
+   ubyte subCode() { return _subCode; }
+}
+
 enum MemoryArea : ubyte {
    CIO_BIT = 0x30,
    W_BIT = 0x31,
@@ -13,31 +29,6 @@ enum MemoryArea : ubyte {
    H_WORD = 0xB2,
    A_WORD = 0xB3,
    D_WORD = 0x82
-}
-
-enum ErrorCodes {
-   errSocketCreation = 0x00000001,
-   errConnectionTimeout = 0x00000002,
-   errConnectionFailed = 0x00000003,
-   errReceiveTimeout = 0x00000004,
-   errDataReceive = 0x00000005,
-   errSendTimeout = 0x00000006,
-   errDataSend = 0x00000007,
-   errConnectionReset = 0x00000008,
-   errNotConnected = 0x00000009,
-   errUnreachableHost = 0x0000000a,
-
-   //fins execution error codes
-   finsErrUndefined = 0x00010000,
-   finsErrLocalNode = 0x00010001,
-   finsErrDestNode = 0x00010002,
-   finsErrCommController = 0x00010003,
-   finsErrNotExec = 0x00010004,
-   finsErrRouting = 0x00010005,
-   finsErrCmdFormat = 0x00010006,
-   finsErrParam = 0x00010007,
-   finsErrCannotRead = 0x00010008,
-   finsErrCannotWrite = 0x00010009
 }
 
 struct Header {
@@ -98,19 +89,17 @@ unittest {
    data.sna = 0;
    data.sa1 = 0x02;
    data.sa2 = 0;
+   data.mainCmdCode = 0x01;
+   data.subCmdCode = 0x01;
+
    ubyte[] exp = [0x80, 0x00, 0x02, 0x00, 0x16, 0x0, 0x00, 0x02, 0x0, 0x0, 0x01, 0x01];
    auto b = data.toBytes;
-   import std.stdio;
-
-   writeln(b.length);
-
    assert(b.length == 12);
-   import std.conv;
 
-   for (int i = 0; i < 10; ++i) {
+   import std.conv;
+   for (int i = 0; i < 12; ++i) {
       assert(b[i] == exp[i], i.to!string());
    }
-   //assert(data.toBytes == exp);
 }
 
 /**
@@ -133,6 +122,28 @@ do {
    h.mainCmdCode = blob[10];
    h.subCmdCode = blob[11];
    return h;
+}
+
+unittest {
+   ubyte[] blob = [
+      0xc0,
+      0x0, 0x02, 0x0,
+      0x02, 0x0, 0x0,
+      0x16, 0x0, 0x0,
+   0x01, 0x02
+   ];
+   Header h = blob.toHeader;
+   assert(h.icf == 0xC0);
+   assert(h.dna == 0x0);
+   assert(h.da1 == 0x2);
+   assert(h.da2 == 0x0);
+   assert(h.sna == 0x0);
+   assert(h.sa1 == 0x16);
+   assert(h.sa2 == 0x0);
+   assert(h.sid == 0x0);
+   assert(h.mainCmdCode == 0x01);
+   assert(h.subCmdCode == 0x02);
+
 }
 
 struct ResponseData {
@@ -234,22 +245,32 @@ class FinsClient {
       ubyte[] sendFrame = header.toBytes() ~ comText;
       ubyte[] receiveFrame = channel.send(sendFrame);
 
-      //Frame deconstruct
       ResponseData response = receiveFrame.toResponse();
-      //response execution code
       if (response.mainRspCode != 0) {
-         switch (response.mainRspCode) {
-            case 1:
-               //currentStatus = (int)FinsProtocol.ErrorCodes.finsErrLocalNode;
-               break;
-            case 2:
-               //currentStatus = (int)FinsProtocol.ErrorCodes.finsErrDestNode;
-               break;
-            default:
-               //currentStatus = (int)FinsProtocol.ErrorCodes.finsErrUndefined;
-               break;
-         }
+         throw new FinsException(response.mainRspCode, response.subRspCode);
       }
       return response.text;
+   }
+}
+
+string mainErrToString(ubyte mainErr) {
+   switch (mainErr) {
+      case 0x01: return "Local node error";
+      case 0x02: return "Destination node error";
+      case 0x03: return "Communications controller error";
+      case 0x04: return "Not executable";
+      case 0x05: return "Routing error";
+      case 0x10: return "Command format error";
+      case 0x11: return "Parameter error";
+      case 0x20: return "Read not possible";
+      case 0x21: return "Write not possible";
+      case 0x22: return "Not executable in current mode";
+      case 0x23: return "No Unit";
+      case 0x24: return "Start/stop not possible";
+      case 0x25: return "Unit error";
+      case 0x26: return "Command error";
+      case 0x30: return "Access right error";
+      case 0x40: return "Abort";
+      default: return "Unknown error";
    }
 }
