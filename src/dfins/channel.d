@@ -25,13 +25,14 @@ class ChannelTimeoutException : Exception {
    }
 }
 
+/+
 unittest {
    ChannelTimeoutException ex = new ChannelTimeoutException("message", "192.168.221.1", [10, 11]);
    ex.ip.shouldEqual("192.168.221.1");
    ex.messageSent.shouldEqual([10, 11]);
    ex.msg.shouldEqual("message -- PLC ip 192.168.221.1");
 }
-
++/
 interface IChannel {
    ubyte[] send(const(ubyte[]) msg);
 }

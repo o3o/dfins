@@ -44,40 +44,67 @@ struct CommandData {
    /**
     * Information Control Field, set to 0x80
     */
-   ubyte ICF;
-   ubyte RSV;//RESERVED, SET TO 0x00
-   ubyte GCT;//GATEWAY COUNT, SET TO 0x02
-   ubyte DNA;//DESTINATION NETWORK, 0x01 IF THERE ARE NOT NETWORK INTERMEDIARIES
-   ubyte DA1;//DESTINATION NODE NUMBER, IF SET TO DEFAULT THIS IS THE SUBNET BYTE OF THE IP OF THE PLC (EX. 192.168.0.1 -> 0x01)
-   ubyte DA2;//DESTINATION UNIT NUMBER, THE UNIT NUMBER, SEE THE HW CONIFG OF PLC, GENERALLY 0x00
-   ubyte SNA;//SOURCE NETWORK, GENERALLY 0x01
-   ubyte SA1;//SOURCE NODE NUMBER, LIKE THE DESTINATION NODE NUMBER, YOU COULD SET A FIXED NUMBER INTO PLC CONFIG
-   ubyte SA2;//SOURCE UNIT NUMBER, LIKE THE DESTINATION UNIT NUMBER
-   ubyte SID;//COUNTER FOR THE RESEND, GENERALLY 0x00
-   ubyte MR;
-   ubyte SR;
+   ubyte icf = 0x80;
+   ubyte rsv;//RESERVED, SET TO 0x00
+   ubyte gct = 0x02;//GATEWAY COUNT, SET TO 0x02
+   ubyte dna;//DESTINATION NETWORK, 0x01 IF THERE ARE NOT NETWORK INTERMEDIARIES
+   ubyte da1;//DESTINATION NODE NUMBER, IF SET TO DEFAULT THIS IS THE SUBNET BYTE OF THE IP OF THE PLC (EX. 192.168.0.1 -> 0x01)
+   ubyte da2;//DESTINATION UNIT NUMBER, THE UNIT NUMBER, SEE THE HW CONIFG OF PLC, GENERALLY 0x00
+   ubyte sna;//SOURCE NETWORK, GENERALLY 0x01
+   ubyte sa1;//SOURCE NODE NUMBER, LIKE THE DESTINATION NODE NUMBER, YOU COULD SET A FIXED NUMBER INTO PLC CONFIG
+   ubyte sa2;//SOURCE UNIT NUMBER, LIKE THE DESTINATION UNIT NUMBER
+   ubyte sid;//COUNTER FOR THE RESEND, GENERALLY 0x00
+   ubyte mr= 0x01;
+   ubyte sr= 0x01;
    ubyte[] text;
 }
 
 ubyte[] toBytes(CommandData data) {
-   ubyte[] b = new ubyte[](12 + data.text.length);
-   b ~= data.ICF;
-   b ~= data.RSV;
-   b ~= data.GCT;
-   b ~= data.DNA;
-   b ~= data.DA1;
-   b ~= data.DA2;
-   b ~= data.SNA;
-   b ~= data.SA1;
-   b ~= data.SA2;
-   b ~= data.SID;
-   b ~= data.MR;
-   b ~= data.SR;
+   //ubyte[] b = new ubyte[](12 + data.text.length);
+   ubyte[] b ;
+   b ~= data.icf;
+   b ~= data.rsv;
+   b ~= data.gct;
+   b ~= data.dna;
+   b ~= data.da1;
+   b ~= data.da2;
+   b ~= data.sna;
+   b ~= data.sa1;
+   b ~= data.sa2;
+   b ~= data.sid;
+   b ~= data.mr;
+   b ~= data.sr;
    foreach (elem; data.text) {
       b ~= elem;
    }
    return b;
 }
+
+unittest {
+   CommandData data;
+   data.dna = 0;
+   data.da1 = 0x16;
+   data.da2 = 0;
+   data.sna = 0;
+   data.sa1 = 0x02;
+   data.sa2 = 0;
+   ubyte[] exp = [0x80, 0x00, 0x02,
+      0x00, 0x16, 0x0,
+      0x00, 0x02, 0x0,
+      0x0,0x01,0x1
+   ];
+   auto b = data.toBytes;
+   import std.stdio;
+   writeln(b.length);
+
+   assert(b.length == 12);
+   import std.conv;
+for (int i = 0; i < 12; ++i) {
+   assert(b[i] == exp[i], i.to!string());
+}
+   //assert(data.toBytes == exp);
+}
+
 
 struct ResponseData {
    public ubyte ICF;
@@ -276,18 +303,18 @@ class FinsClient {
 
    private ubyte[] sendFinsCommand(ubyte MR, ubyte SR, ubyte[] comText) {
       CommandData commandFrame;
-      commandFrame.ICF = 0x80;
-      commandFrame.RSV = 0x00;
-      commandFrame.GCT = 0x02;
-      commandFrame.DNA = _dna;
-      commandFrame.DA1 = _da1;
-      commandFrame.DA2 = _da2;
-      commandFrame.SNA = _sna;
-      commandFrame.SA1 = _sa1;
-      commandFrame.SA2 = _sa2;
-      commandFrame.SID = 0x00;
-      commandFrame.MR = MR;
-      commandFrame.SR = SR;
+      commandFrame.icf = 0x80;
+      commandFrame.rsv = 0x00;
+      commandFrame.gct = 0x02;
+      commandFrame.dna = _dna;
+      commandFrame.da1 = _da1;
+      commandFrame.da2 = _da2;
+      commandFrame.sna = _sna;
+      commandFrame.sa1 = _sa1;
+      commandFrame.sa2 = _sa2;
+      commandFrame.sid = 0x00;
+      commandFrame.mr = MR;
+      commandFrame.sr = SR;
       commandFrame.text = comText;
 
       // Frame send via UDP
