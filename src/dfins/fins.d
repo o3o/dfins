@@ -1,21 +1,28 @@
+/**
+ * Fins client
+ */
 module dfins.fins;
 
 import dfins.channel;
-
 
 class FinsException : Exception {
    this(ubyte mainCode, ubyte subCode, string file = null, size_t line = 0) @trusted {
       _mainCode = mainCode;
       _subCode = subCode;
       import std.string : format;
+
       super("Fins error %s".format(mainErrToString(_mainCode)));
    }
 
    private ubyte _mainCode;
-   ubyte mainCode() { return _mainCode; }
+   ubyte mainCode() {
+      return _mainCode;
+   }
 
    private ubyte _subCode;
-   ubyte subCode() { return _subCode; }
+   ubyte subCode() {
+      return _subCode;
+   }
 }
 
 enum MemoryArea : ubyte {
@@ -97,6 +104,7 @@ unittest {
    assert(b.length == 12);
 
    import std.conv;
+
    for (int i = 0; i < 12; ++i) {
       assert(b[i] == exp[i], i.to!string());
    }
@@ -125,13 +133,7 @@ do {
 }
 
 unittest {
-   ubyte[] blob = [
-      0xc0,
-      0x0, 0x02, 0x0,
-      0x02, 0x0, 0x0,
-      0x16, 0x0, 0x0,
-   0x01, 0x02
-   ];
+   ubyte[] blob = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02];
    Header h = blob.toHeader;
    assert(h.icf == 0xC0);
    assert(h.dna == 0x0);
@@ -190,17 +192,23 @@ class FinsClient {
     * Params:
     *  area = The area type
     *  start = The start offset for the write process.
-    *  size = The size of the area to write. IMPORTANT: The size is expressed in WORD (2 byte)
     *  buffer = The byte array buffer which will be write in the PLC.
-    *
     */
-   void writeArea(MemoryArea area, ushort start, ushort size, ubyte[] buffer) {
+   void writeArea(MemoryArea area, ushort start, ubyte[] buffer)
+   in {
+      assert((buffer.length & 1) == 0, "Odd buffer length");
+   }
+   do {
+      import std.conv : to;
+      import dfins.util : BYTES_PER_WORD;
+
       ubyte[] text;
       //memory area code
       text ~= cast(ubyte)area;
+      //IMPORTANT: The size is expressed in WORD (2 byte)
+      ushort size = (buffer.length / BYTES_PER_WORD).to!ushort;
       text ~= getAddrBlock(start, size);
       text ~= buffer;
-
       sendFinsCommand(0x01, 0x02, text);
    }
 
@@ -225,18 +233,10 @@ class FinsClient {
       //memory area code
       cmdBlock ~= cast(ubyte)area;
 
-      //beginning address
-      cmdBlock ~= cast(ubyte)(start >> 8);
-      cmdBlock ~= cast(ubyte)start;
-      cmdBlock ~= 0x00;
-
-      //number of items
-      cmdBlock ~= cast(ubyte)(size >> 8);
-      cmdBlock ~= cast(ubyte)size;
+      cmdBlock ~= getAddrBlock(start, size);
 
       return sendFinsCommand(0x01, 0x01, cmdBlock);
    }
-
 
    private ubyte[] sendFinsCommand(ubyte mainCode, ubyte subCode, ubyte[] comText) {
       header.mainCmdCode = mainCode;
@@ -255,22 +255,39 @@ class FinsClient {
 
 string mainErrToString(ubyte mainErr) {
    switch (mainErr) {
-      case 0x01: return "Local node error";
-      case 0x02: return "Destination node error";
-      case 0x03: return "Communications controller error";
-      case 0x04: return "Not executable";
-      case 0x05: return "Routing error";
-      case 0x10: return "Command format error";
-      case 0x11: return "Parameter error";
-      case 0x20: return "Read not possible";
-      case 0x21: return "Write not possible";
-      case 0x22: return "Not executable in current mode";
-      case 0x23: return "No Unit";
-      case 0x24: return "Start/stop not possible";
-      case 0x25: return "Unit error";
-      case 0x26: return "Command error";
-      case 0x30: return "Access right error";
-      case 0x40: return "Abort";
-      default: return "Unknown error";
+      case 0x01:
+         return "Local node error";
+      case 0x02:
+         return "Destination node error";
+      case 0x03:
+         return "Communications controller error";
+      case 0x04:
+         return "Not executable";
+      case 0x05:
+         return "Routing error";
+      case 0x10:
+         return "Command format error";
+      case 0x11:
+         return "Parameter error";
+      case 0x20:
+         return "Read not possible";
+      case 0x21:
+         return "Write not possible";
+      case 0x22:
+         return "Not executable in current mode";
+      case 0x23:
+         return "No Unit";
+      case 0x24:
+         return "Start/stop not possible";
+      case 0x25:
+         return "Unit error";
+      case 0x26:
+         return "Command error";
+      case 0x30:
+         return "Access right error";
+      case 0x40:
+         return "Abort";
+      default:
+         return "Unknown error";
    }
 }

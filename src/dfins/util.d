@@ -64,14 +64,12 @@ ushort[] toWords(ubyte[] bytes) {
 }
 
 ///
-/+
 unittest {
-   [0x10].toWords().shouldEqual([0x10]);
-   [0, 0xAB].toWords().shouldEqual([0xAB00]);
-   [0x20, 0x0].toWords().shouldEqual([0x20]);
-   [0x10, 0x20, 0x30, 0x40, 0x50].toWords().shouldEqual([0x2010, 0x4030, 0x50]);
+   assert([0x10].toWords() == [0x10]);
+   assert([0, 0xAB].toWords() == [0xAB00]);
+   assert([0x20, 0x0].toWords() == [0x20]);
+   assert([0x10, 0x20, 0x30, 0x40, 0x50].toWords() == [0x2010, 0x4030, 0x50]);
 }
-+/
 
 /**
  * Takes an array of word $(D ushort) and converts the first $(D T.sizeof / 2)
@@ -86,17 +84,15 @@ T peek(T)(ushort[] words) {
    return peek!T(words, 0);
 }
 ///
-/+
 unittest {
    ushort[] words = [0x645A, 0x3ffb];
-   words.peek!float.shouldEqual(1.964F);
-   words.length.shouldEqual(2);
+   assert(words.peek!float == 1.964F);
+   assert(words.length == 2);
 
    ushort[] odd = [0x645A, 0x3ffb, 0xffaa];
-   odd.peek!float.shouldEqual(1.964F);
-   odd.length.shouldEqual(3);
+   assert(odd.peek!float == 1.964F);
+   assert(odd.length == 3);
 }
-+/
 
 /**
  * Takes an array of word ($(D ushort)) and converts the first $(D T.sizeof / 2)
@@ -116,21 +112,19 @@ T peek(T)(ushort[] words, size_t index) {
    return buffer.peek!(T, Endian.littleEndian)(index * BYTES_PER_WORD);
 }
 ///
-/+
 unittest {
-   [0x645A, 0x3ffb].peek!float(0).shouldEqual(1.964F);
-   [0, 0, 0x645A, 0x3ffb].peek!float(2).shouldEqual(1.964F);
-   [0, 0, 0x645A, 0x3ffb].peek!float(0).shouldEqual(0);
-   [0x80, 0, 0].peek!ushort(0).shouldEqual(128);
-   [0xFFFF].peek!short(0).shouldEqual(-1);
-   [0xFFFF].peek!ushort(0).shouldEqual(65_535);
-   [0xFFF7].peek!ushort(0).shouldEqual(65_527);
-   [0xFFF7].peek!short(0).shouldEqual(-9);
-   [0xFFFB].peek!short(0).shouldEqual(-5);
-   [0xFFFB].peek!ushort(0).shouldEqual(65_531);
-   [0x8000].peek!short(0).shouldEqual(-32_768);
+   assert([0x645A, 0x3ffb].peek!float(0) == 1.964F);
+   assert([0, 0, 0x645A, 0x3ffb].peek!float(2) == 1.964F);
+   assert([0, 0, 0x645A, 0x3ffb].peek!float(0) == 0);
+   assert([0x80, 0, 0].peek!ushort(0) == 128);
+   assert([0xFFFF].peek!short(0) == -1);
+   assert([0xFFFF].peek!ushort(0) == 65_535);
+   assert([0xFFF7].peek!ushort(0) == 65_527);
+   assert([0xFFF7].peek!short(0) == -9);
+   assert([0xFFFB].peek!short(0) == -5);
+   assert([0xFFFB].peek!ushort(0) == 65_531);
+   assert([0x8000].peek!short(0) == -32_768);
 }
-+/
 
 /**
  * Converts ushort value into BDC format
@@ -157,17 +151,15 @@ ushort toBCD(ushort dec) {
    }
 }
 ///
-/+
 unittest {
-   0.toBCD().shouldEqual(0);
-   10.toBCD().shouldEqual(0x10);
-   34.toBCD().shouldEqual(52);
-   127.toBCD().shouldEqual(0x127);
-   110.toBCD().shouldEqual(0x110);
-   9999.toBCD().shouldEqual(0x9999);
-   9999.toBCD().shouldEqual(39_321);
+   assert(0.toBCD() == 0);
+   assert(10.toBCD() == 0x10);
+   assert(34.toBCD() == 52);
+   assert(127.toBCD() == 0x127);
+   assert(110.toBCD() == 0x110);
+   assert(9999.toBCD() == 0x9999);
+   assert(9999.toBCD() == 39_321);
 }
-+/
 
 /**
  * Converts BCD value into decimal format
@@ -195,19 +187,16 @@ ushort fromBCD(ushort bcd) {
    }
 }
 ///
-/+
 unittest {
-   0.fromBCD().shouldEqual(0);
-
-   (0x22).fromBCD().shouldEqual(22);
-   (34).fromBCD().shouldEqual(22);
+   assert(0.fromBCD() == 0);
+   assert((0x22).fromBCD() == 22);
+   assert((34).fromBCD() == 22);
    // 17bcd
-   (0b0001_0111).fromBCD().shouldEqual(17);
-   295.fromBCD().shouldEqual(127);
-   39_321.fromBCD().shouldEqual(9_999);
-   (0x9999).fromBCD().shouldEqual(9_999);
+   assert((0b0001_0111).fromBCD() == 17);
+   assert(295.fromBCD() == 127);
+   assert(39_321.fromBCD() == 9_999);
+   assert((0x9999).fromBCD() == 9_999);
 }
-+/
 
 /**
  * Takes an input range of words ($(D ushort)) and converts the first $(D T.sizeof / 2)
@@ -235,96 +224,94 @@ T pop(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ushort
 /**
  * $(D pop!float) example
  */
-/+
 unittest {
    ushort[] asPeek = [0x645A, 0x3ffb];
-   asPeek.pop!float.shouldEqual(1.964F);
-   asPeek.length.shouldEqual(0);
+   assert(asPeek.pop!float == 1.964F);
+   assert(asPeek.length == 0);
 
    // float.sizeOf is 4bytes => 2 word
    ushort[] input = [0x1eb8, 0xc19d];
-   input.length.shouldEqual(2);
-   pop!float(input).shouldEqual(-19.64F);
-   input.length.shouldEqual(0);
+   assert(input.length == 2);
+   assert(pop!float(input) == -19.64F);
+   assert(input.length == 0);
 
    input = [0x0, 0xBF00, 0x0, 0x3F00];
-   input.pop!float.shouldEqual(-0.5F);
-   pop!float(input).shouldEqual(0.5F);
+   assert(input.pop!float == -0.5F);
+   assert(pop!float(input) == 0.5F);
 }
 
-+/
 /**
  * $(D pop!double) examples.
  *
  * A double has size 8 bytes => 4word
  */
-/+
 unittest {
    ushort[] input = [0x0, 0x0, 0x0, 0x3FE0];
-   input.length.shouldEqual(4);
+   assert(input.length == 4);
 
-   pop!double(input).shouldEqual(0.5);
-   input.length.shouldEqual(0);
+   assert(pop!double(input) == 0.5);
+   assert(input.length == 0);
 
    input = [0x0, 0x0, 0x0, 0xBFE0];
-   pop!double(input).shouldEqual(-0.5);
+   assert(pop!double(input) == -0.5);
 
    input = [0x00, 0x01, 0x02, 0x03];
-   input.length.shouldEqual(4);
-   pop!int(input).shouldEqual(0x10000);
-   input.length.shouldEqual(2);
-   pop!int(input).shouldEqual(0x30002);
-   input.length.shouldEqual(0);
+   assert(input.length == 4);
+   assert(pop!int(input) == 0x10000);
+   assert(input.length == 2);
+   assert(pop!int(input) == 0x30002);
+   assert(input.length == 0);
 }
+
 /**
  * pop!ushort and short examples
  */
 unittest {
    ushort[] input = [0xFFFF, 0xFFFF, 0xFFFB, 0xFFFB];
-   pop!ushort(input).shouldEqual(0xFFFF);
-   pop!short(input).shouldEqual(-1);
-   pop!ushort(input).shouldEqual(0xFFFB);
-   pop!short(input).shouldEqual(-5);
+   assert(pop!ushort(input) == 0xFFFF);
+   assert(pop!short(input) == -1);
+   assert(pop!ushort(input) == 0xFFFB);
+   assert(pop!short(input) == -5);
 }
 
 unittest {
    ushort[] input = [0x1eb8, 0xc19d, 0x0, 0xBF00, 0x0, 0x3F00, 0x0, 0x0, 0x0, 0x3FE0, 0x0, 0x0, 0x0, 0xBFE0, 0x00,
       0x01, 0x02, 0x03, 0xFFFF, 0xFFFF, 0xFFFB, 0xFFFB];
 
-   pop!float(input).shouldEqual(-19.64F);
-   pop!float(input).shouldEqual(-0.5F);
-   pop!float(input).shouldEqual(0.5F);
+   assert(pop!float(input) == -19.64F);
+   assert(pop!float(input) == -0.5F);
+   assert(pop!float(input) == 0.5F);
 
-   pop!double(input).shouldEqual(0.5);
-   pop!double(input).shouldEqual(-0.5);
+   assert(pop!double(input) == 0.5);
+   assert(pop!double(input) == -0.5);
 
-   pop!int(input).shouldEqual(0x10000);
-   pop!int(input).shouldEqual(0x30002);
+   assert(pop!int(input) == 0x10000);
+   assert(pop!int(input) == 0x30002);
 
-   pop!ushort(input).shouldEqual(0xFFFF);
-   pop!short(input).shouldEqual(-1);
-   pop!ushort(input).shouldEqual(0xFFFB);
-   pop!short(input).shouldEqual(-5);
+   assert(pop!ushort(input) == 0xFFFF);
+   assert(pop!short(input) == -1);
+   assert(pop!ushort(input) == 0xFFFB);
+   assert(pop!short(input) == -5);
 }
 
 unittest {
    ushort[] shortBuffer = [0x645A];
-   shortBuffer.length.shouldEqual(1);
-   shortBuffer.pop!float().shouldThrow!Exception;
+   assert(shortBuffer.length == 1);
+   //shortBuffer.pop!float().shouldThrow!Exception;
 
    ushort[] bBuffer = [0x0001, 0x0002, 0x0003];
-   bBuffer.length.shouldEqual(3);
+   assert(bBuffer.length == 3);
 
-   bBuffer.pop!ushort.shouldEqual(1);
-   bBuffer.length.shouldEqual(2);
+   assert(bBuffer.pop!ushort == 1);
+   assert(bBuffer.length == 2);
 
-   bBuffer.pop!ushort.shouldEqual(2);
-   bBuffer.length.shouldEqual(1);
+   assert(bBuffer.pop!ushort == 2);
+   assert(bBuffer.length == 1);
 
-   bBuffer.pop!ushort.shouldEqual(3);
-   bBuffer.length.shouldEqual(0);
+   assert(bBuffer.pop!ushort == 3);
+   assert(bBuffer.length == 0);
 }
-+/
+
 /**
  * Takes an input range of words ($(D ushort)) and converts the first `numWords`
  * word's to $(D T).
@@ -353,30 +340,32 @@ private auto popInteger(R, int numWords, bool wantSigned)(ref R input)
       return result;
    }
 }
-/+
+
 unittest {
    ushort[] input = [0x00, 0x01, 0x02, 0x03];
-   popInteger!(ushort[], 2, false)(input).shouldEqual(0x10000);
-   popInteger!(ushort[], 2, false)(input).shouldEqual(0x30002);
-   input.length.shouldEqual(0);
+   assert(popInteger!(ushort[], 2, false)(input) == 0x10000);
+   assert(popInteger!(ushort[], 2, false)(input) == 0x30002);
+   assert(input.length == 0);
+
    input = [0x01, 0x02, 0x03, 0x04];
-   popInteger!(ushort[], 3, false)(input).shouldEqual(0x300020001);
+   assert(popInteger!(ushort[], 3, false)(input) == 0x300020001);
 
    input = [0x01, 0x02];
-   popInteger!(ushort[], 3, false)(input).shouldThrow!Exception;
+   //assert(popInteger!(ushort[], 3, false)(input).shouldThrow!Exception;
 
    input = [0x00, 0x8000];
-   popInteger!(ushort[], 2, false)(input).shouldEqual(0x8000_0000);
+   assert(popInteger!(ushort[], 2, false)(input) == 0x8000_0000);
 
    input = [0xFFFF, 0xFFFF];
-   popInteger!(ushort[], 2, true)(input).shouldEqual(-1);
+   assert(popInteger!(ushort[], 2, true)(input) == -1);
+
    input = [0xFFFF, 0xFFFF, 0xFFFB, 0xFFFB];
-   popInteger!(ushort[], 1, false)(input).shouldEqual(0xFFFF);
-   popInteger!(ushort[], 1, true)(input).shouldEqual(-1);
-   popInteger!(ushort[], 1, false)(input).shouldEqual(0xFFFB);
-   popInteger!(ushort[], 1, true)(input).shouldEqual(-5);
+   assert(popInteger!(ushort[], 1, false)(input) == 0xFFFF);
+   assert(popInteger!(ushort[], 1, true)(input) == -1);
+   assert(popInteger!(ushort[], 1, false)(input) == 0xFFFB);
+   assert(popInteger!(ushort[], 1, true)(input) == -5);
 }
-+/
+
 private template IntegerLargerThan(int numWords) if (numWords > 0 && numWords <= 4) {
    static if (numWords == 1) {
       alias IntegerLargerThan = ushort;
@@ -446,21 +435,19 @@ unittest {
 /**
  * Write ushort and int
  */
-/+
 unittest {
    import std.array : appender;
 
    auto app = appender!(const(ushort)[]);
    app.write!ushort(5);
-   app.data.shouldEqual([5]);
+   assert(app.data == [5]);
 
    app.write!float(1.964F);
-   app.data.shouldEqual([5, 0x645A, 0x3ffb]);
+   assert(app.data == [5, 0x645A, 0x3ffb]);
 
    app.write!uint(0x1720_8034);
-   app.data.shouldEqual([5, 0x645A, 0x3ffb, 0x8034, 0x1720]);
+   assert(app.data == [5, 0x645A, 0x3ffb, 0x8034, 0x1720]);
 }
-+/
 
 private void writeInteger(R, int numWords)(ref R output, IntegerLargerThan!numWords n) if (isOutputRange!(R, ushort)) {
    import std.traits : Unsigned;
@@ -481,38 +468,37 @@ private float uint2float(uint x) pure nothrow {
    fi.i = x;
    return fi.f;
 }
-/+
+
 unittest {
    // see http://gregstoll.dyndns.org/~gregstoll/floattohex/
-   uint2float(0x24369620).shouldEqual(3.959212E-17F);
-   uint2float(0x3F000000).shouldEqual(0.5F);
-   uint2float(0xBF000000).shouldEqual(-0.5F);
-   uint2float(0x0).shouldEqual(0);
-   uint2float(0x419D1EB8).shouldEqual(19.64F);
-   uint2float(0xC19D1EB8).shouldEqual(-19.64F);
-   uint2float(0x358637bd).shouldEqual(0.000001F);
-   uint2float(0xb58637bd).shouldEqual(-0.000001F);
+   assert(uint2float(0x24369620) == 3.959212E-17F);
+   assert(uint2float(0x3F000000) == 0.5F);
+   assert(uint2float(0xBF000000) == -0.5F);
+   assert(uint2float(0x0) == 0);
+   assert(uint2float(0x419D1EB8) == 19.64F);
+   assert(uint2float(0xC19D1EB8) == -19.64F);
+   assert(uint2float(0x358637bd) == 0.000001F);
+   assert(uint2float(0xb58637bd) == -0.000001F);
 }
-+/
 
 private uint float2uint(float x) pure nothrow {
    float_uint fi;
    fi.f = x;
    return fi.i;
 }
-/+
+
 unittest {
    // see http://gregstoll.dyndns.org/~gregstoll/floattohex/
-   float2uint(3.959212E-17F).shouldEqual(0x24369620);
-   float2uint(.5F).shouldEqual(0x3F000000);
-   float2uint(-.5F).shouldEqual(0xBF000000);
-   float2uint(0x0).shouldEqual(0);
-   float2uint(19.64F).shouldEqual(0x419D1EB8);
-   float2uint(-19.64F).shouldEqual(0xC19D1EB8);
-   float2uint(0.000001F).shouldEqual(0x358637bd);
-   float2uint(-0.000001F).shouldEqual(0xb58637bd);
+   assert(float2uint(3.959212E-17F) == 0x24369620);
+   assert(float2uint(.5F) == 0x3F000000);
+   assert(float2uint(-.5F) == 0xBF000000);
+   assert(float2uint(0x0) == 0);
+   assert(float2uint(19.64F) == 0x419D1EB8);
+   assert(float2uint(-19.64F) == 0xC19D1EB8);
+   assert(float2uint(0.000001F) == 0x358637bd);
+   assert(float2uint(-0.000001F) == 0xb58637bd);
 }
-+/
+
 // read/write 64-bits float
 private union float_uint {
    float f;
@@ -525,29 +511,26 @@ double ulong2double(ulong x) pure nothrow {
    return fi.f;
 }
 
-/+
 unittest {
    // see http://gregstoll.dyndns.org/~gregstoll/floattohex/
-   ulong2double(0x0).shouldEqual(0);
-   ulong2double(0x3fe0000000000000).shouldEqual(0.5);
-   ulong2double(0xbfe0000000000000).shouldEqual(-0.5);
+   assert(ulong2double(0x0) == 0);
+   assert(ulong2double(0x3fe0000000000000) == 0.5);
+   assert(ulong2double(0xbfe0000000000000) == -0.5);
 }
-+/
 
 private ulong double2ulong(double x) pure nothrow {
    double_ulong fi;
    fi.f = x;
    return fi.i;
 }
-/+
-unittest {
 
+unittest {
    // see http://gregstoll.dyndns.org/~gregstoll/floattohex/
-   double2ulong(0).shouldEqual(0);
-   double2ulong(0.5).shouldEqual(0x3fe0000000000000);
-   double2ulong(-0.5).shouldEqual(0xbfe0000000000000);
+   assert(double2ulong(0) == 0);
+   assert(double2ulong(0.5) == 0x3fe0000000000000);
+   assert(double2ulong(-0.5) == 0xbfe0000000000000);
 }
-+/
+
 private union double_ulong {
    double f;
    ulong i;
