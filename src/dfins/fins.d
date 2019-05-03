@@ -69,8 +69,10 @@ enum MemoryArea : ubyte {
    CT = 0x89
 }
 
+///
 enum FINS_HEADER_LEN = 12;
 
+///
 struct Header {
    /**
     * Information Control Field, set to 0x80
@@ -82,14 +84,38 @@ struct Header {
     * Destination network address, 0x0 local , 0x01 if there are not network intermediaries
     */
    ubyte dna;
-   ubyte da1; //destination node number, if set to default this is the subnet byte of the ip of the plc (ex. 192.168.0.1 -> 0x01)
-   ubyte da2; //destination unit number, the unit number, see the hw conifg of plc, generally 0x00
-   ubyte sna; //source network, generally 0x01
-   ubyte sa1 = 0x02; //source node number, like the destination node number, you could set a fixed number into plc config
-   ubyte sa2; //source unit number, like the destination unit number
-   ubyte sid; //counter for the resend, generally 0x00
-   ubyte mainRqsCode; // Main command code (high byte)
-   ubyte subRqsCode; // Sub request code
+   /**
+    * Destination node number, if set to default this is the subnet byte of the ip of the plc (ex. 192.168.0.1 -> 0x01)
+    */
+   ubyte da1;
+   /**
+    * Destination unit number, the unit number, see the hw config of plc, generally 0x00
+    */
+   ubyte da2;
+   /**
+    * Source network, generally 0x01
+    */
+   ubyte sna;
+   /**
+    * Source node number, like the destination node number, you could set a fixed number into plc config
+    */
+   ubyte sa1 = 0x02;
+   /**
+    * Source unit number, like the destination unit number
+    */
+   ubyte sa2;
+   /**
+    * Counter for the resend, generally 0x00
+    */
+   ubyte sid;
+   /**
+    * Main command code (high byte)
+    */
+   ubyte mainRqsCode;
+   /**
+    * Sub request code
+    */
+   ubyte subRqsCode;
 }
 
 /**
@@ -101,8 +127,15 @@ Header header(ubyte subnet) {
    return h;
 }
 
+unittest {
+   Header hdr = header(0x11);
+   assert(hdr.icf == 0x80);
+   assert(hdr.dna == 0x0);
+   assert(hdr.da1 == 0x11);
+}
+
 /**
- *  Convert an `Header` to array of bytes.
+ * Convert an `Header` to array of bytes.
  */
 ubyte[] toBytes(Header data) {
    enum RSV = 0x0;
@@ -182,6 +215,7 @@ unittest {
    assert(h.subRqsCode == 0x02);
 }
 
+///
 struct ResponseData {
    Header header;
    ubyte mainRspCode;
