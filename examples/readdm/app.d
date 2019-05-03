@@ -10,15 +10,15 @@ void main(string[] args) {
    Header h = header(22);
    FinsClient f = new FinsClient(chan, h);
 
-   ubyte[] d0 = f.readArea(MemoryArea.D_WORD, 0, 1);
+   ubyte[] d0 = f.readArea(MemoryArea.DM, 0, 1);
    writefln("DM000: %( 0x%x %)", d0.toWords);
 
-   ubyte[] d1 = f.readArea(MemoryArea.D_WORD, 1, 1);
+   ubyte[] d1 = f.readArea(MemoryArea.DM, 1, 1);
    writefln("DM001: %( 0x%x %)", d1.toWords);
 
    ushort[] v = [0x64];
-   f.writeArea(MemoryArea.D_WORD, 0, v.toBytes!ushort);
-   writefln("DM000: %( 0x%x %)", f.readArea(MemoryArea.D_WORD, 0, 1).toWords);
+   f.writeArea(MemoryArea.DM, 0, v.toBytes!ushort);
+   writefln("DM000: %( 0x%x %)", f.readArea(MemoryArea.DM, 0, 1).toWords);
 
    //v[0] = 0;
    //f.writeArea(MemoryArea.D_WORD, 0, v.toBytes!ushort);

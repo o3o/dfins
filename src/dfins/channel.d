@@ -4,6 +4,9 @@ import std.experimental.logger;
 import core.time : dur;
 import std.socket;
 
+/**
+ * Timeout exception
+ */
 class ChannelTimeoutException : Exception {
    this(string msg, string ip, const(ubyte[]) messageSent, string file = null, size_t line = 0) @trusted {
       _ip = ip;

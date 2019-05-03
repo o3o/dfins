@@ -5,6 +5,9 @@ module dfins.fins;
 
 import dfins.channel;
 
+/**
+ * Fins protocol exception
+ */
 class FinsException : Exception {
    this(ubyte mainCode, ubyte subCode, string file = null, size_t line = 0) @trusted {
       _mainCode = mainCode;
@@ -15,28 +18,58 @@ class FinsException : Exception {
    }
 
    private ubyte _mainCode;
+   /**
+    * Main error code
+    */
    ubyte mainCode() {
       return _mainCode;
    }
 
    private ubyte _subCode;
+   /**
+    * Sub error code
+    */
    ubyte subCode() {
       return _subCode;
    }
 }
 
+/**
+ * Memory area code. See pg.15 of $(I FINS Commands reference manual)
+ */
 enum MemoryArea : ubyte {
    CIO_BIT = 0x30,
    W_BIT = 0x31,
    H_BIT = 0x32,
    A_BIT = 0x33,
    D_BIT = 0x02,
-   CIO_WORD = 0xB0,
-   W_WORD = 0xB1,
-   H_WORD = 0xB2,
-   A_WORD = 0xB3,
-   D_WORD = 0x82
+   /**
+    * CIO Channel IO area, word
+    */
+   IO = 0xB0,
+   /**
+    * WR Work area, word
+    */
+   WR = 0xB1,
+   /*
+    * HR Holding area, word
+    */
+   HR = 0xB2,
+   /**
+    * AR Auxiliary Relay area, word
+    */
+   AR = 0xB3,
+   /**
+    * DM Data Memory area, word
+    */
+   DM = 0x82,
+   /**
+    * CNT, Counter area, word
+    */
+   CT = 0x89
 }
+
+enum FINS_HEADER_LEN = 12;
 
 struct Header {
    /**
@@ -45,15 +78,18 @@ struct Header {
    ubyte icf = 0x80;
    //ubyte rsv;//reserved, set to 0x00
    //ubyte gct = 0x02;//gateway count, set to 0x02
-   ubyte dna; //destination network, 0x01 if there are not network intermediaries
+   /**
+    * Destination network address, 0x0 local , 0x01 if there are not network intermediaries
+    */
+   ubyte dna;
    ubyte da1; //destination node number, if set to default this is the subnet byte of the ip of the plc (ex. 192.168.0.1 -> 0x01)
    ubyte da2; //destination unit number, the unit number, see the hw conifg of plc, generally 0x00
    ubyte sna; //source network, generally 0x01
    ubyte sa1 = 0x02; //source node number, like the destination node number, you could set a fixed number into plc config
    ubyte sa2; //source unit number, like the destination unit number
    ubyte sid; //counter for the resend, generally 0x00
-   ubyte mainCmdCode; // command code high byte
-   ubyte subCmdCode; // command code low byte
+   ubyte mainRqsCode; // Main command code (high byte)
+   ubyte subRqsCode; // Sub request code
 }
 
 /**
@@ -69,7 +105,6 @@ Header header(ubyte subnet) {
  *  Convert an `Header` to array of bytes.
  */
 ubyte[] toBytes(Header data) {
-   //ubyte[] b = new ubyte[](12 + data.text.length);
    enum RSV = 0x0;
    enum GCT = 0x02;
    ubyte[] b;
@@ -83,8 +118,8 @@ ubyte[] toBytes(Header data) {
    b ~= data.sa1;
    b ~= data.sa2;
    b ~= data.sid;
-   b ~= data.mainCmdCode;
-   b ~= data.subCmdCode;
+   b ~= data.mainRqsCode;
+   b ~= data.subRqsCode;
    return b;
 }
 
@@ -96,16 +131,16 @@ unittest {
    data.sna = 0;
    data.sa1 = 0x02;
    data.sa2 = 0;
-   data.mainCmdCode = 0x01;
-   data.subCmdCode = 0x01;
+   data.mainRqsCode = 0x01;
+   data.subRqsCode = 0x01;
 
    ubyte[] exp = [0x80, 0x00, 0x02, 0x00, 0x16, 0x0, 0x00, 0x02, 0x0, 0x0, 0x01, 0x01];
    auto b = data.toBytes;
-   assert(b.length == 12);
+   assert(b.length == FINS_HEADER_LEN);
 
    import std.conv;
 
-   for (int i = 0; i < 12; ++i) {
+   for (int i = 0; i < FINS_HEADER_LEN; ++i) {
       assert(b[i] == exp[i], i.to!string());
    }
 }
@@ -115,7 +150,7 @@ unittest {
  */
 Header toHeader(ubyte[] blob)
 in {
-   assert(blob.length > 11, "Blob too short (less than 12)");
+   assert(blob.length >= FINS_HEADER_LEN, "Blob too short (less than 12)");
 }
 do {
    Header h;
@@ -127,8 +162,8 @@ do {
    h.sa1 = blob[7];
    h.sa2 = blob[8];
    h.sid = blob[9];
-   h.mainCmdCode = blob[10];
-   h.subCmdCode = blob[11];
+   h.mainRqsCode = blob[10];
+   h.subRqsCode = blob[11];
    return h;
 }
 
@@ -143,8 +178,8 @@ unittest {
    assert(h.sa1 == 0x16);
    assert(h.sa2 == 0x0);
    assert(h.sid == 0x0);
-   assert(h.mainCmdCode == 0x01);
-   assert(h.subCmdCode == 0x02);
+   assert(h.mainRqsCode == 0x01);
+   assert(h.subRqsCode == 0x02);
 }
 
 struct ResponseData {
@@ -154,6 +189,9 @@ struct ResponseData {
    ubyte[] text;
 }
 
+/**
+ * Converts an array of bytes to `ResponseData` structure
+ */
 ResponseData toResponse(ubyte[] data) {
    ResponseData resp;
    resp.header = data.toHeader;
@@ -165,7 +203,10 @@ ResponseData toResponse(ubyte[] data) {
    return resp;
 }
 
-ubyte[] getAddrBlock(ushort start, ushort size) {
+/**
+ * Returs an array with start address and size.
+ */
+private ubyte[] getAddrBlock(ushort start, ushort size) {
    ubyte[] cmdBlock;
 
    //beginning address
@@ -177,6 +218,9 @@ ubyte[] getAddrBlock(ushort start, ushort size) {
    return cmdBlock;
 }
 
+/**
+ * Client for Fins protocol
+ */
 class FinsClient {
    private IChannel channel;
    private Header header;
@@ -232,15 +276,14 @@ class FinsClient {
 
       //memory area code
       cmdBlock ~= cast(ubyte)area;
-
       cmdBlock ~= getAddrBlock(start, size);
 
       return sendFinsCommand(0x01, 0x01, cmdBlock);
    }
 
    private ubyte[] sendFinsCommand(ubyte mainCode, ubyte subCode, ubyte[] comText) {
-      header.mainCmdCode = mainCode;
-      header.subCmdCode = subCode;
+      header.mainRqsCode = mainCode;
+      header.subRqsCode = subCode;
 
       ubyte[] sendFrame = header.toBytes() ~ comText;
       ubyte[] receiveFrame = channel.send(sendFrame);
@@ -253,6 +296,9 @@ class FinsClient {
    }
 }
 
+/**
+ * Converts main error code into string
+ */
 string mainErrToString(ubyte mainErr) {
    switch (mainErr) {
       case 0x01:
