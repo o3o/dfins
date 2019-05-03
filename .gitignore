@@ -13,3 +13,4 @@ dfins-test-*
 *.o
 *.obj
 *.lst
+libdfins.a

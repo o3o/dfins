@@ -8,7 +8,7 @@ class FinsException : Exception {
       _mainCode = mainCode;
       _subCode = subCode;
       import std.string : format;
-      super("Fins error %s", mainErrToString(_mainCode));
+      super("Fins error %s".format(mainErrToString(_mainCode)));
    }
 
    private ubyte _mainCode;
@@ -143,7 +143,6 @@ unittest {
    assert(h.sid == 0x0);
    assert(h.mainCmdCode == 0x01);
    assert(h.subCmdCode == 0x02);
-
 }
 
 struct ResponseData {
@@ -162,6 +161,18 @@ ResponseData toResponse(ubyte[] data) {
       resp.text ~= data[14 + i];
    }
    return resp;
+}
+
+ubyte[] getAddrBlock(ushort start, ushort size) {
+   ubyte[] cmdBlock;
+
+   //beginning address
+   cmdBlock ~= cast(ubyte)(start >> 8);
+   cmdBlock ~= cast(ubyte)start;
+   cmdBlock ~= 0x00;
+   cmdBlock ~= cast(ubyte)(size >> 8);
+   cmdBlock ~= cast(ubyte)size;
+   return cmdBlock;
 }
 
 class FinsClient {
@@ -184,25 +195,13 @@ class FinsClient {
     *
     */
    void writeArea(MemoryArea area, ushort start, ushort size, ubyte[] buffer) {
-      ubyte[] text = new ubyte[](6 + buffer.length);
+      ubyte[] text;
       //memory area code
       text ~= cast(ubyte)area;
+      text ~= getAddrBlock(start, size);
+      text ~= buffer;
 
-      //beginning address
-      text ~= cast(ubyte)(start >> 8);
-      text ~= cast(ubyte)start;
-      text ~= 0x00;
-
-      //number of items
-      text ~= cast(ubyte)(size >> 8);
-      text ~= cast(ubyte)size;
-
-      for (int i = 0; i < buffer.length; i++) {
-         text ~= buffer[i];
-      }
-
-      //sending the fins command and storing the response
-      //sendFinsCommand(0x01, 0x02, text);
+      sendFinsCommand(0x01, 0x02, text);
    }
 
    /**
@@ -238,9 +237,10 @@ class FinsClient {
       return sendFinsCommand(0x01, 0x01, cmdBlock);
    }
 
-   private ubyte[] sendFinsCommand(ubyte cmdH, ubyte cmdL, ubyte[] comText) {
-      header.mainCmdCode = cmdH;
-      header.subCmdCode = cmdL;
+
+   private ubyte[] sendFinsCommand(ubyte mainCode, ubyte subCode, ubyte[] comText) {
+      header.mainCmdCode = mainCode;
+      header.subCmdCode = subCode;
 
       ubyte[] sendFrame = header.toBytes() ~ comText;
       ubyte[] receiveFrame = channel.send(sendFrame);
