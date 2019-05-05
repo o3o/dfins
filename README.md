@@ -38,3 +38,13 @@ ushort[] v = [42, 19, 64];
 f.writeArea(MemoryArea.DM, 0, v.toBytes!ushort);
 ```
 
+
+## Documentation
+dfins uses ddoc. One way of building and serving the documentation locally (you will need libevent for serving) is:
+
+```
+dub build -b ddox && dub run -b ddox
+```
+
+Or use your favorite DDOC compiler.
+

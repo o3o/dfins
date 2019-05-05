@@ -14,3 +14,4 @@ dfins-test-*
 *.obj
 *.lst
 libdfins.a
+examples/readdm/readdn

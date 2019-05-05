@@ -1,5 +1,9 @@
 /**
  * Fins client
+ *
+ *	Copyright: © 2016-2026 Orfeo Da Viá.
+ *	License: Boost Software License - Version 1.0 - August 17th, 2003
+ *	Authors: Orfeo Da Vià
  */
 module dfins.fins;
 
@@ -35,7 +39,7 @@ class FinsException : Exception {
 }
 
 /**
- * Memory area code. See pg.15 of $(I FINS Commands reference manual)
+ * Memory area code. See page 15 of $(I FINS Commands reference manual)
  */
 enum MemoryArea : ubyte {
    CIO_BIT = 0x30,
@@ -85,31 +89,47 @@ struct Header {
     */
    ubyte dna;
    /**
-    * Destination node number, if set to default this is the subnet byte of the ip of the plc (ex. 192.168.0.1 -> 0x01)
+    * Destination node number
+    *
+    * If set to default this is the subnet byte of the ip of the plc
+    * Examples:
+    * --------------------
+    * ex. 192.168.0.1 -> 0x01
+    * --------------------
     */
    ubyte da1;
    /**
-    * Destination unit number, the unit number, see the hw config of plc, generally 0x00
+    * Destination unit number
+    *
+    * The unit number, see the hardware config of plc, generally 0x00
     */
    ubyte da2;
    /**
-    * Source network, generally 0x01
+    * Source network
+    *
+    * generally 0x01
     */
    ubyte sna;
    /**
-    * Source node number, like the destination node number, you could set a fixed number into plc config
+    * Source node number.
+    *
+    * Like the destination node number, you could set a fixed number into plc config
     */
    ubyte sa1 = 0x02;
    /**
-    * Source unit number, like the destination unit number
+    * Source unit number
+    *
+    * Like the destination unit number
     */
    ubyte sa2;
    /**
-    * Counter for the resend, generally 0x00
+    * Counter for the resend
+    *
+    * Generally 0x00
     */
    ubyte sid;
    /**
-    * Main command code (high byte)
+    * Main request code (high byte)
     */
    ubyte mainRqsCode;
    /**
@@ -133,6 +153,8 @@ unittest {
    assert(hdr.dna == 0x0);
    assert(hdr.da1 == 0x11);
 }
+
+
 
 /**
  * Convert an `Header` to array of bytes.
