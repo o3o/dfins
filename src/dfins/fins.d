@@ -13,6 +13,12 @@ import dfins.channel;
  * Fins protocol exception
  */
 class FinsException : Exception {
+   /**
+    * Constructor which takes two error codes.
+    * Params:
+    *  mainCode = Main error code
+    *  subCode = Sub error code
+    */
    this(ubyte mainCode, ubyte subCode, string file = null, size_t line = 0) @trusted {
       _mainCode = mainCode;
       _subCode = subCode;
@@ -148,7 +154,7 @@ Header header(ubyte subnet) {
 }
 
 unittest {
-   Header hdr = header(0x11);
+   immutable(Header) hdr = header(0x11);
    assert(hdr.icf == 0x80);
    assert(hdr.dna == 0x0);
    assert(hdr.da1 == 0x11);
@@ -255,8 +261,8 @@ do {
 }
 
 unittest {
-   ubyte[] blob = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02];
-   Header h = blob.toHeader;
+   immutable(ubyte[]) blob = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02];
+   immutable(Header) h = blob.toHeader;
    assert(h.icf == 0xC0);
    assert(h.dna == 0x0);
    assert(h.da1 == 0x2);
@@ -271,9 +277,21 @@ unittest {
 
 ///
 struct ResponseData {
+   /**
+    * Response header
+    */
    Header header;
+   /**
+    * Main response code
+    */
    ubyte mainRspCode;
+   /**
+    * Sub response code
+    */
    ubyte subRspCode;
+   /**
+    * Payload
+    */
    ubyte[] text;
 }
 
@@ -295,13 +313,13 @@ do {
 
 unittest {
    // dfmt off
-   ubyte[] blob = [
+   immutable(ubyte[]) blob = [
       0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02,
       0x42, 0x43,  // rsp code
       0x64, 0x65, 0x66, 0x67, 0x68, 0x69 // data
    ];
    // dfmt on
-   ResponseData r = blob.toResponse;
+   immutable(ResponseData) r = blob.toResponse;
    assert(r.header.icf == 0xC0);
    assert(r.header.dna == 0x0);
    assert(r.header.da1 == 0x2);
@@ -320,9 +338,8 @@ unittest {
    //import std.exception : assertThrown;
    //ubyte[] invalid = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02];
    //assertThrown( invalid.toResponse());
-   ubyte[] nodata = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02, 0x42, 0x43];
+   immutable(ubyte[]) nodata = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02, 0x42, 0x43];
    assert(nodata.toResponse.text == []);
-
 }
 
 /**
@@ -346,6 +363,9 @@ private ubyte[] getAddrBlock(ushort start, ushort size) {
 class FinsClient {
    private IChannel channel;
    private Header header;
+   /**
+    * Constructor which takes a channel and header.
+    */
    this(IChannel channel, Header header) {
       assert(channel !is null);
       this.channel = channel;
@@ -372,7 +392,7 @@ class FinsClient {
       //memory area code
       text ~= cast(ubyte)area;
       //IMPORTANT: The size is expressed in WORD (2 byte)
-      ushort size = (buffer.length / BYTES_PER_WORD).to!ushort;
+      immutable(ushort) size = (buffer.length / BYTES_PER_WORD).to!ushort;
       text ~= getAddrBlock(start, size);
       text ~= buffer;
       sendFinsCommand(0x01, 0x02, text);
@@ -475,8 +495,9 @@ in {
    assert(timeout >= 0);
 }
 do {
-   import dfins.channel: IChannel, createUdpChannel;
-   IChannel chan = createUdpChannel(ip, timeout);
+   import dfins.channel : IChannel, createUdpChannel;
+
+   IChannel chan = createUdpChannel(ip, timeout, port);
    Header h = header(ip.getSubnet);
    return new FinsClient(chan, h);
 }
