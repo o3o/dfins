@@ -154,7 +154,39 @@ unittest {
    assert(hdr.da1 == 0x11);
 }
 
+/**
+ * Get subnet (`da1`) from ip address
+ *
+ * Examples:
+ * --------------------
+ * enum IP = "192.168.1.42";
+ * IChannel chan = createUdpChannel(IP, 2000);
+ * Header h = header(IP.getSubnet); // subnet == da1 == 42
+ * FinsClient f = new FinsClient(chan, h);
+ * --------------------
+ */
+ubyte getSubnet(string ip) @safe {
+   import std.regex : regex, matchFirst;
+   import std.conv : to;
+   import std.exception : enforce;
 
+   auto ipReg = regex(
+         r"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+   auto m = matchFirst(ip, ipReg);
+   enforce(!m.empty && m.length > 4, "Invalid ip");
+   return m[4].to!ubyte;
+}
+
+unittest {
+   import std.exception : assertThrown;
+
+   assert("192.168.221.64".getSubnet == 64);
+   assert("192.168.221.1".getSubnet == 1);
+   assertThrown("192.168.221".getSubnet);
+   assertThrown("400.168.221.1".getSubnet);
+   assertThrown("".getSubnet);
+   assertThrown("asas".getSubnet);
+}
 
 /**
  * Convert an `Header` to array of bytes.
@@ -193,7 +225,7 @@ unittest {
    auto b = data.toBytes;
    assert(b.length == FINS_HEADER_LEN);
 
-   import std.conv;
+   import std.conv : to;
 
    for (int i = 0; i < FINS_HEADER_LEN; ++i) {
       assert(b[i] == exp[i], i.to!string());
@@ -248,15 +280,49 @@ struct ResponseData {
 /**
  * Converts an array of bytes to `ResponseData` structure
  */
-ResponseData toResponse(ubyte[] data) {
+ResponseData toResponse(ubyte[] data)
+in {
+   assert(data.length > FINS_HEADER_LEN + 1, "Invalid data length");
+}
+do {
    ResponseData resp;
    resp.header = data.toHeader;
    resp.mainRspCode = data[12];
    resp.subRspCode = data[13];
-   for (int i = 0; i < data.length - 14; i++) {
-      resp.text ~= data[14 + i];
-   }
+   resp.text = data[14 .. $];
    return resp;
+}
+
+unittest {
+   // dfmt off
+   ubyte[] blob = [
+      0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02,
+      0x42, 0x43,  // rsp code
+      0x64, 0x65, 0x66, 0x67, 0x68, 0x69 // data
+   ];
+   // dfmt on
+   ResponseData r = blob.toResponse;
+   assert(r.header.icf == 0xC0);
+   assert(r.header.dna == 0x0);
+   assert(r.header.da1 == 0x2);
+   assert(r.header.da2 == 0x0);
+   assert(r.header.sna == 0x0);
+   assert(r.header.sa1 == 0x16);
+   assert(r.header.sa2 == 0x0);
+   assert(r.header.sid == 0x0);
+   assert(r.header.mainRqsCode == 0x01);
+   assert(r.header.subRqsCode == 0x02);
+
+   assert(r.mainRspCode == 0x42);
+   assert(r.subRspCode == 0x43);
+   assert(r.text == [0x64, 0x65, 0x66, 0x67, 0x68, 0x69]);
+
+   //import std.exception : assertThrown;
+   //ubyte[] invalid = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02];
+   //assertThrown( invalid.toResponse());
+   ubyte[] nodata = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02, 0x42, 0x43];
+   assert(nodata.toResponse.text == []);
+
 }
 
 /**
