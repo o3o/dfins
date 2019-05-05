@@ -1,3 +1,10 @@
+/**
+ * Communication channels
+ *
+ *	Copyright: © 2016-2026 Orfeo Da Vià.
+ *	License: Boost Software License - Version 1.0 - August 17th, 2003
+ *	Authors: Orfeo Da Vià
+ */
 module dfins.channel;
 
 import std.experimental.logger;
@@ -41,7 +48,7 @@ interface IChannel {
 }
 
 /**
- * Implementazione di $(LINK IChannel) con protocollo ethernet (UDP)
+ * UDP channel.
  */
 class UdpChannel : IChannel {
    private Socket socket;
@@ -55,7 +62,7 @@ class UdpChannel : IChannel {
    }
 
    /**
-    * Invia il messaggio e ritorna una risposta
+    * Send a message and wait for a reply
     */
    ubyte[] send(const(ubyte[]) msg) {
       int attempt;
@@ -92,7 +99,6 @@ class UdpChannel : IChannel {
 }
 
 /**
-/*
  * Convenience functions that create an `IChannel` object
  *
  * Params:

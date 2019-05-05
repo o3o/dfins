@@ -1,7 +1,7 @@
 /**
  * Fins client
  *
- *	Copyright: © 2016-2026 Orfeo Da Viá.
+ *	Copyright: © 2016-2026 Orfeo Da Vià.
  *	License: Boost Software License - Version 1.0 - August 17th, 2003
  *	Authors: Orfeo Da Vià
  */
@@ -379,21 +379,17 @@ class FinsClient {
    }
 
    /**
-    * Read an Omron PLC area: the area must be defined as CJ like area
+    * Read an Omron PLC area
     *
     * Params:
     *  area = The area type
     *  start = The start offset for the read process.
     *  size = The size of the area to read. IMPORTANT: The size is expressed in WORD (2 byte)
     *
-    *
     * Returns:
     * The byte array buffer in which will be store the PLC readed area.
-    *
     */
    ubyte[] readArea(MemoryArea area, ushort start, ushort size) {
-      import std.stdio;
-
       ubyte[] cmdBlock;
 
       //memory area code
@@ -458,4 +454,29 @@ string mainErrToString(ubyte mainErr) {
       default:
          return "Unknown error";
    }
+}
+
+/**
+ * Convenience functions that create an `FinsClient` object.
+ *
+ * Examples:
+ * --------------------
+ * FinsClient f = createFinsClient("192.168.1.1", 2000, 9600);
+ * --------------------
+ *
+ * Params:
+ *  ip = IP address
+ *  timeout = Send and receive timeout in ms
+ *  port = Port number (default 9600)
+ */
+FinsClient createFinsClient(string ip, long timeout, ushort port = 9600)
+in {
+   assert(ip.length);
+   assert(timeout >= 0);
+}
+do {
+   import dfins.channel: IChannel, createUdpChannel;
+   IChannel chan = createUdpChannel(ip, timeout);
+   Header h = header(ip.getSubnet);
+   return new FinsClient(chan, h);
 }

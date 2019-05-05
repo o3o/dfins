@@ -1,5 +1,9 @@
 /**
  * Utility functions to convert PLC words
+ *
+ *	Copyright: © 2016-2026 Orfeo Da Vià.
+ *	License: Boost Software License - Version 1.0 - August 17th, 2003
+ *	Authors: Orfeo Da Vià
  */
 module dfins.util;
 
