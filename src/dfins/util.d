@@ -7,9 +7,8 @@
  */
 module dfins.util;
 
-import std.bitmanip : read;
-import std.system : Endian; // for Endian
 import std.range;
+import std.system : Endian;
 
 /**
  * Bytes per each word.
@@ -26,7 +25,8 @@ enum BYTES_PER_WORD = 2;
  * Params:
  *   input = array of type T to convert
  *
- * Returns: An array of ubyte
+ * Returns:
+ *   An array of ubyte
  */
 ubyte[] toBytes(T)(T[] input) {
    import std.array : appender;
@@ -50,13 +50,17 @@ unittest {
 }
 
 /**
- * Converts an array of bytes into wordd $(D ushort) array.
+ * Converts an array of bytes into words $(D ushort) array.
  *
- * Params:  bytes = array to convert
+ * Params:
+ *   bytes = array to convert
  *
- * Returns: An ushort array that rapresents words
+ * Returns:
+ *   An ushort array that rapresents words
  */
 ushort[] toWords(ubyte[] bytes) {
+   import std.bitmanip : read;
+
    ushort[] dm;
    while (bytes.length >= BYTES_PER_WORD) {
       dm ~= bytes.read!(ushort, Endian.littleEndian);
