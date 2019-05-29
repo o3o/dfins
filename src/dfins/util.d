@@ -18,9 +18,37 @@ import std.system : Endian;
 enum BYTES_PER_WORD = 2;
 
 /**
- * Converts an array of type T into an ubyte array.
+ * Converts an array of type T into an ubyte array using LittleEndian.
  *
- * Omron stores data in LittleEndian format.
+ * Params:
+ *   input = array of type T to convert
+ *
+ * Returns:
+ *   An array of ubyte
+ */
+ubyte[] toBytesLE(T)(T[] input) {
+   import std.array : appender;
+   import std.bitmanip : append;
+
+   auto buffer = appender!(const(ubyte)[])();
+   foreach (dm; input) {
+      buffer.append!(T, Endian.littleEndian)(dm);
+   }
+   return buffer.data.dup;
+}
+///
+unittest {
+   assert([0x8034].toBytesLE!ushort() == [0x34, 0x80]);
+   ushort[] buf = [0x8034, 0x2010];
+   assert(buf.toBytesLE!ushort() == [0x34, 0x80, 0x10, 0x20]);
+   assert(buf.length == 2);
+
+   assert([0x8034].toBytesLE!uint() == [0x34, 0x80, 0, 0]);
+   assert([0x010464].toBytesLE!uint() == [0x64, 0x04, 1, 0]);
+}
+
+/**
+ * Converts an array of type T into an ubyte array using BigEndian.
  *
  * Params:
  *   input = array of type T to convert
@@ -34,23 +62,25 @@ ubyte[] toBytes(T)(T[] input) {
 
    auto buffer = appender!(const(ubyte)[])();
    foreach (dm; input) {
-      buffer.append!(T, Endian.littleEndian)(dm);
+      buffer.append!(T, Endian.bigEndian)(dm);
    }
    return buffer.data.dup;
 }
 ///
 unittest {
-   assert([0x8034].toBytes!ushort() == [0x34, 0x80]);
+   assert([0x8034].toBytes!ushort() == [0x80, 0x34]);
    ushort[] buf = [0x8034, 0x2010];
-   assert(buf.toBytes!ushort() == [0x34, 0x80, 0x10, 0x20]);
+   assert(buf.toBytes!ushort() == [0x80, 0x34, 0x20, 0x10]);
    assert(buf.length == 2);
 
-   assert([0x8034].toBytes!uint() == [0x34, 0x80, 0, 0]);
-   assert([0x010464].toBytes!uint() == [0x64, 0x04, 1, 0]);
+   //import std.stdio;
+   //writefln("%( 0x%x %)", [0x8034].toBytes!uint());
+   assert([0x8034].toBytes!uint() == [0, 0, 0x80, 0x34]);
+   assert([0x010464].toBytes!uint() == [0x0, 0x01, 0x04, 0x64]);
 }
 
 /**
- * Converts an array of bytes into words $(D ushort) array.
+ * Converts an array of bytes into words $(D ushort) array using LittleEndian.
  *
  * Params:
  *   bytes = array to convert
@@ -58,7 +88,7 @@ unittest {
  * Returns:
  *   An ushort array that rapresents words
  */
-ushort[] toWords(ubyte[] bytes) {
+ushort[] toWordsLE(ubyte[] bytes) {
    import std.bitmanip : read;
 
    ushort[] dm;
@@ -73,10 +103,40 @@ ushort[] toWords(ubyte[] bytes) {
 
 ///
 unittest {
+   assert([0x10].toWordsLE() == [0x10]);
+   assert([0, 0xAB].toWordsLE() == [0xAB00]);
+   assert([0x20, 0x0].toWordsLE() == [0x20]);
+   assert([0x10, 0x20, 0x30, 0x40, 0x50].toWordsLE() == [0x2010, 0x4030, 0x50]);
+}
+
+/**
+ * Converts an array of bytes into words $(D ushort) array using BigEndian.
+ *
+ * Params:
+ *   bytes = array to convert
+ *
+ * Returns:
+ *   An ushort array that rapresents words
+ */
+ushort[] toWords(ubyte[] bytes) {
+   import std.bitmanip : read;
+
+   ushort[] dm;
+   while (bytes.length >= BYTES_PER_WORD) {
+      dm ~= bytes.read!(ushort, Endian.bigEndian);
+   }
+   if (bytes.length > 0) {
+      dm ~= bytes[0];
+   }
+   return dm;
+}
+
+///
+unittest {
    assert([0x10].toWords() == [0x10]);
-   assert([0, 0xAB].toWords() == [0xAB00]);
-   assert([0x20, 0x0].toWords() == [0x20]);
-   assert([0x10, 0x20, 0x30, 0x40, 0x50].toWords() == [0x2010, 0x4030, 0x50]);
+   assert([0, 0xAB].toWords() == [0xAB]);
+   assert([0x20, 0x0].toWords() == [0x2000]);
+   assert([0x10, 0x20, 0x30, 0x40, 0x50].toWords() == [0x1020, 0x3040, 0x50]);
 }
 
 /**
@@ -116,7 +176,7 @@ unittest {
 T peek(T)(ushort[] words, size_t index) {
    import std.bitmanip : peek;
 
-   ubyte[] buffer = toBytes(words);
+   ubyte[] buffer = toBytesLE(words);
    return buffer.peek!(T, Endian.littleEndian)(index * BYTES_PER_WORD);
 }
 ///
