@@ -514,7 +514,7 @@ in {
 do {
    import dfins.channel : IChannel, createUdpChannel;
 
-   IChannel chan = createUdpChannel(ip, timeout, port, srcNodeNumber);
-   Header h = header(ip.getSubnet);
+   IChannel chan = createUdpChannel(ip, timeout, port);
+   Header h = header(ip.getSubnet, srcNodeNumber);
    return new FinsClient(chan, h);
 }
