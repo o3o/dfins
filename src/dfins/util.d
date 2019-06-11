@@ -133,10 +133,29 @@ ushort[] toWords(ubyte[] bytes) {
 
 ///
 unittest {
+   import std.bitmanip: read, peek;
+   // default endianess is Endian.bigEndian
+   // to change
+   // buf.read!(ushort, Endian.littleEndian);
    assert([0x10].toWords() == [0x10]);
+   ubyte[] buf = [0x0, 0x10];
+   assert(buf.peek!ushort == 0x10);
+   assert(buf.read!ushort == 0x10);
+
+   buf = [0x0, 0xAB];
    assert([0, 0xAB].toWords() == [0xAB]);
+   assert(buf.peek!ushort() == 0xAB);
+
+   buf = [0x20, 0x0];
    assert([0x20, 0x0].toWords() == [0x2000]);
+   assert(buf.peek!ushort == 0x2000);
+
    assert([0x10, 0x20, 0x30, 0x40, 0x50].toWords() == [0x1020, 0x3040, 0x50]);
+
+   ubyte[] buffer = [0x10, 0x20, 0x30, 0x40, 0x0, 0x50];
+   assert(buffer.read!ushort == 0x1020);
+   assert(buffer.read!ushort == 0x3040);
+   assert(buffer.read!ushort == 0x50);
 }
 
 /**

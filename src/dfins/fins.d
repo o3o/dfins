@@ -98,7 +98,7 @@ struct Header {
     */
    ubyte dna;
    /**
-    * Destination node number
+    * Destination node number.
     *
     * If set to default this is the subnet byte of the ip of the plc
     * Examples:
@@ -126,33 +126,40 @@ struct Header {
     */
    ubyte sa1 = 0x02;
    /**
-    * Source unit number
+    * Source unit number.
     *
-    * Like the destination unit number
+    * Like the destination unit number.
     */
    ubyte sa2;
    /**
-    * Counter for the resend
+    * Counter for the resend.
     *
     * Generally 0x00
     */
    ubyte sid;
    /**
-    * Main request code (high byte)
+    * Main request code (high byte).
     */
    ubyte mainRqsCode;
    /**
-    * Sub request code
+    * Sub request code.
     */
    ubyte subRqsCode;
 }
 
 /**
- * Convenience function for creating an `Header` with subnet data (`da1`)
+ * Convenience function for creating an `Header` with destination node number (`da1`) and source node number (`sa1`).
+ *
+ * `da1` is the subnet byte of the ip of the plc
+ *
+ * Params:
+ *  dstNodeNumber = Destination node number
+ *  srcNodeNumber = Source node number
  */
-Header header(ubyte subnet) {
+Header header(ubyte dstNodeNumber, ubyte srcNodeNumber = 0x02) {
    Header h;
-   h.da1 = subnet;
+   h.da1 = dstNodeNumber;
+   h.sa1 = srcNodeNumber;
    return h;
 }
 
@@ -161,10 +168,14 @@ unittest {
    assert(hdr.icf == 0x80);
    assert(hdr.dna == 0x0);
    assert(hdr.da1 == 0x11);
+   assert(hdr.sa1 == 0x02);
+   immutable(Header) hdr2 = header(0x10, 0x42);
+   assert(hdr2.da1 == 0x10);
+   assert(hdr2.sa1 == 0x42);
 }
 
 /**
- * Get subnet (`da1`) from ip address
+ * Get subnet (`da1`) from ip address.
  *
  * Examples:
  * --------------------
@@ -191,6 +202,8 @@ unittest {
 
    assert("192.168.221.64".getSubnet == 64);
    assert("192.168.221.1".getSubnet == 1);
+   assert("192.168.22.2".getSubnet == 2);
+
    assertThrown("192.168.221".getSubnet);
    assertThrown("400.168.221.1".getSubnet);
    assertThrown("".getSubnet);
@@ -491,8 +504,9 @@ string mainErrToString(ubyte mainErr) {
  *  ip = IP address
  *  timeout = Send and receive timeout in ms
  *  port = Port number (default 9600)
+ *  srcNodeNumber = Source node number
  */
-FinsClient createFinsClient(string ip, long timeout, ushort port = 9600)
+FinsClient createFinsClient(string ip, long timeout, ushort port = 9600, ubyte srcNodeNumber = 0x02)
 in {
    assert(ip.length);
    assert(timeout >= 0);
@@ -500,7 +514,7 @@ in {
 do {
    import dfins.channel : IChannel, createUdpChannel;
 
-   IChannel chan = createUdpChannel(ip, timeout, port);
+   IChannel chan = createUdpChannel(ip, timeout, port, srcNodeNumber);
    Header h = header(ip.getSubnet);
    return new FinsClient(chan, h);
 }
