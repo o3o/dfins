@@ -56,6 +56,7 @@ unittest {
  * Returns:
  *   An array of ubyte
  */
+deprecated("Will be removed, use nativeToBigEndian")
 ubyte[] toBytes(T)(T[] input) {
    import std.array : appender;
    import std.bitmanip : append;
@@ -91,6 +92,7 @@ unittest {
  * Returns:
  *   An ushort array that rapresents words
  */
+deprecated("Will be removed, use nativeToLittleEndian")
 ushort[] toWordsLE(ubyte[] bytes) {
    import std.bitmanip : read;
 
@@ -121,6 +123,7 @@ unittest {
  * Returns:
  *   An ushort array that rapresents words
  */
+deprecated("Will be removed, use read")
 ushort[] toWords(ubyte[] bytes) {
    import std.bitmanip : read;
 
@@ -175,6 +178,7 @@ unittest {
  *  T = The integral type to convert the first `T.sizeof / 2` words to.
  *  words = The array of word to convert
  */
+deprecated("Will be removed, use bitmanip: peek")
 T peek(T)(ushort[] words) {
    return peek!T(words, 0);
 }
@@ -200,6 +204,7 @@ unittest {
  *  words = The array of word to convert
  *  index = The index to start reading from (instead of starting at the front).
  */
+deprecated("Will be removed, use bitmanip: peek")
 T peek(T)(ushort[] words, size_t index) {
    import std.bitmanip : peek;
 
@@ -302,6 +307,7 @@ unittest {
  *  T = The integral type to convert the first `T.sizeof / 2` word to.
  *  input = The input range of words to convert
  */
+deprecated("Will be removed, use bitmanip: read")
 T pop(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ushort)) {
    import std.traits : isIntegral, isSigned;
 
@@ -320,6 +326,7 @@ T pop(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ushort
  * $(D pop!float) example
  */
 unittest {
+   import std.bitmanip : read;
    ushort[] asPeek = [0x645A, 0x3ffb];
    assert(asPeek.pop!float == 1.964F);
    assert(asPeek.length == 0);
@@ -333,6 +340,15 @@ unittest {
    input = [0x0, 0xBF00, 0x0, 0x3F00];
    assert(input.pop!float == -0.5F);
    assert(pop!float(input) == 0.5F);
+
+   // dfmt off
+   ubyte[] buf = [
+      0xBF, 0x0, 0x0, 0x0,
+      0x3F, 0x0, 0x0, 0x0
+   ];
+   // dfmt on
+   assert(buf.read!float == -0.5F);
+   assert(buf.read!float == 0.5F);
 }
 
 /**
