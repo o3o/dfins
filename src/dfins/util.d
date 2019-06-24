@@ -68,6 +68,7 @@ ubyte[] toBytes(T)(T[] input) {
 }
 ///
 unittest {
+   import std.bitmanip : nativeToBigEndian;
    assert([0x8034].toBytes!ushort() == [0x80, 0x34]);
    ushort[] buf = [0x8034, 0x2010];
    assert(buf.toBytes!ushort() == [0x80, 0x34, 0x20, 0x10]);
@@ -77,6 +78,8 @@ unittest {
    //writefln("%( 0x%x %)", [0x8034].toBytes!uint());
    assert([0x8034].toBytes!uint() == [0, 0, 0x80, 0x34]);
    assert([0x010464].toBytes!uint() == [0x0, 0x01, 0x04, 0x64]);
+   assert(nativeToBigEndian!uint(0x8034) == [0, 0, 0x80, 0x34]);
+   assert(nativeToBigEndian!uint(0x010464) == [0x0, 0x01, 0x04, 0x64]);
 }
 
 /**
@@ -156,6 +159,11 @@ unittest {
    assert(buffer.read!ushort == 0x1020);
    assert(buffer.read!ushort == 0x3040);
    assert(buffer.read!ushort == 0x50);
+   //0x4048F5C3 => 3.14
+   ubyte[] pi = [0x40, 0x48, 0xF5, 0xC3, 0x50];
+
+   import std.math: approxEqual;
+   assert(approxEqual(pi.read!float, 3.14));
 }
 
 /**
@@ -622,3 +630,33 @@ private union double_ulong {
    double f;
    ulong i;
 }
+
+@("PC2PLC")
+unittest {
+   import std.bitmanip : nativeToBigEndian;
+   assert(nativeToBigEndian!uint(0x8034) == [0, 0, 0x80, 0x34]);
+   assert(nativeToBigEndian!uint(0x010464) == [0x0, 0x01, 0x04, 0x64]);
+
+   //0x4048F5C3
+   assert(nativeToBigEndian!float(3.14) == [0x40, 0x48, 0xF5, 0xC3]);
+   //0x419D1EB8
+   assert(nativeToBigEndian!float(19.64) == [0x41, 0x9D, 0x1E, 0xB8]);
+}
+
+@("PLC2PC")
+unittest {
+   import std.bitmanip : read;
+   import std.math: approxEqual;
+   // dfmt off
+   ubyte[] buf = [
+      0x0, 0x10,
+      0x40, 0x48, 0xF5, 0xC3,
+      0x41, 0x9D, 0x1E, 0xB8
+   ];
+   // dfmt on
+   //assert(buf.peek!ushort == 0x10);
+   assert(buf.read!ushort == 0x10);
+   assert(approxEqual(buf.read!float, 3.14));
+   assert(approxEqual(buf.read!float, 19.64));
+}
+
