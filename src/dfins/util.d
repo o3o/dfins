@@ -162,12 +162,18 @@ unittest {
    ubyte[] buf = [
       0x0, 0x10,
       0xF5, 0xC3, 0x40, 0x48, // 3.14
-      0x1E, 0xB8, 0x41, 0x9D // 19.64
+      0x1E, 0xB8, 0x41, 0x9D, // 19.64
+      0xF5, 0xC3, 0x40, 0x48, // 1_078_523_331
+      0xF5, 0xC3, 0x40, 0x48, // 1_078_523_331
+      0x0A, 0x3D, 0xBF, 0xB7
    ];
    // dfmt on
    assert(buf.readFins!ushort == 0x10);
    assert(approxEqual(buf.readFins!float, 3.14));
    assert(approxEqual(buf.readFins!float, 19.64));
+   assert(buf.readFins!uint == 1_078_523_331);
+   assert(buf.readFins!int == 1_078_523_331);
+   assert(buf.readFins!int == -1_078_523_331);
 }
 
 
