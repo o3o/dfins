@@ -59,6 +59,7 @@ void main(string[] args) {
          // 30_026 20 char
          ubyte[] ss = f.readArea(MemoryArea.DM, 30_006, 10);
          writefln("DM30_006: %( 0x%x %)", ss);
+         writefln("DM30_006: %s", ss.readString!20);
       }  else if (args[1] == "d") {
          ubyte[] dd = f.readArea(MemoryArea.DM, 30_026, 2);
          writefln("DM30_026: %( 0x%x %)", dd);

@@ -85,7 +85,7 @@ unittest {
 
 /**
  * Takes an input range of ubyte and converts the first $(D T.sizeof)
- * words to $(D T).
+ * bytes to $(D T).
  * The array is consumed.
  *
  * Params:
@@ -136,15 +136,14 @@ unittest {
    assert(buf.readFins!uint == 0x0a0b0c0d);
 }
 
-
 /**
  * Takes an input range of ubyte and converts the first $(D L) bytes to string.
  *
- * L must be even
+ * L must be even.
  * The array is consumed.
  *
  * Params:
- *  T = The type to convert the first `T.sizeof` bytes
+ *  L = The number of bytes to convert. L $(B must be) even and will be converted only ascii char
  *  input = The input range of ubyte to convert
  */
 string readString(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte) && !(L & 1)) {
@@ -164,12 +163,9 @@ string readString(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementTy
    ubyte[] stream = bytes.swapByteOrder!(2).filter!(a => a > 0x1F && a < 0x7F).array;
    return cast(string)stream;
 }
-
+///
 unittest {
    ubyte[] abc00 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
-   import std.stdio;
-   //writefln(">%s<", abc00.readString!9);
-   //assert(abc00.readString!9 == "ABCDEFGHI");
    string s0 = abc00.readString!10;
    assert(s0.length == 9);
    assert(s0 == "ABCDEFGHI");
@@ -189,38 +185,15 @@ unittest {
    ubyte[] abc03 = [0x42, 0x41, 0x00, 0x00, 0x00, 0x00, 0x48, 0x47, 0x0, 0x49];
    string s3 = abc03.readString!4;
    assert(s3 == "AB");
-}
 
-/+string readString(R)(ref R input, size_t length) if ((isInputRange!R) && is(ElementType!R : const ubyte)) {
-   if (length & 1) {
-      ++length;
-   }
-   size_t ptr;
-   ubyte[] bytes;
-   while (!input.empty && ptr < length) {
-      bytes ~= input.front;
-      input.popFront();
-      ++ptr;
-   }
-
-   ubyte[] stream = bytes.swapByteOrder!2;
-   return cast(string)stream;
+   ubyte[] abc04 = [0x62, 0x61, 0x01, 0x01, 0x02, 0xFF, 0x68, 0x67, 0x0, 0x49];
+   //import std.stdio;
+   //writeln(abc04.readString!4);
+   assert(abc04.length == 10);
+   // read 4 byte, but only two are valid ascii char.
+   assert(abc04.readString!4 == "ab");
+   assert(abc04.length == 6);
 }
-
-unittest {
-   import std.algorithm.comparison : equal;
-   ubyte[] abc00 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
-   import std.stdio;
-   string a = abc00.readString(9);
-   writefln(">%s< len %s", a, a.length);
-   assert(a.length == 9);
-   //assert(abc00.readString!9 == "ABCDEFGHI");
-   //assert(abc00.readString(9) == "ABCDEFGHI");
-   ubyte[] abc01 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
-   writefln(">%s<", abc01.readString(40));
-   //assert(abc01.readString!40 == "ABCDEFGHI");
-}
-+/
 
 /**
  * Converts the given value from the native endianness to Fins format and
@@ -301,7 +274,7 @@ unittest {
  *
  * Params:
  *  L = Lenght
- *  array = Buffer with values to fix byte order of.
+ *  data = Buffer with values to fix byte order of.
  */
 ubyte[] swapByteOrder(int L = 4)(ubyte[] data) @trusted pure nothrow if (L == 2 || L == 4 || L == 0) {
    import std.algorithm.mutation : swapAt;
@@ -324,11 +297,11 @@ ubyte[] swapByteOrder(int L = 4)(ubyte[] data) @trusted pure nothrow if (L == 2 
    return array;
 }
 
+///
 unittest {
    import std.algorithm.comparison : equal;
 
    ubyte[] a = [0xF5, 0xC3, 0x40, 0x48, 0xFF];
-
    assert(a.swapByteOrder.equal([0x40, 0x48, 0xF5, 0xc3, 0xFF]));
    assert(a.swapByteOrder!(2).equal([0xc3, 0xF5, 0x48, 0x40, 0xFF]));
 }
