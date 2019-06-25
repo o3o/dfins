@@ -48,3 +48,13 @@ dub build -b ddox && dub run -b ddox
 
 Or use your favorite DDOC compiler.
 
+
+## Omron PLC data example
+
+| Data type | Value       | FINS rep.             | Std rep.                 |
+| ---       | ---         | ---                   | ---                      |
+| float     | 3.14        | 0xF5C34048            | 0x4048F5C3               |
+| string    | 'abcdefghi' | 0x4241444346454847049 | 0x4041424344454547484900 |
+| uint      | 0x0a0b0c0d  | 0x0c0d0a0b            | 0x0a0b0c0d               |
+
+
