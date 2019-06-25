@@ -5,7 +5,7 @@ import dfins.channel;
 import dfins.util;
 
 void main(string[] args) {
-   import std.bitmanip: read;
+   import std.bitmanip: read, nativeToBigEndian;
    IChannel chan = createUdpChannel("192.168.22.2", 2000);
    Header h = header(2, 1);
    FinsClient f = new FinsClient(chan, h);
@@ -35,6 +35,17 @@ void main(string[] args) {
          writefln("DM100. byte0:0x%x byte1:0x%x", d100[0], d100[1]);
          writefln("DM100: %( 0x%x %)", d100.toWords);
          writefln("DM100: 0x%x ", d100.read!ushort);
+      }  else if (args[1] == "f") {
+         import dfins.util: swapByteOrder;
+         ubyte[] flotta = f.readArea(MemoryArea.DM, 30_002, 2).swapByteOrder!4; // 4 bytes --> 2DM
+         writefln("DM30_002: %( 0x%x %)", flotta);
+         writefln("DM30_002: %s", flotta.read!float);
+      }  else if (args[1] == "wf") {
+         import std.conv : to;
+         float ff = args[2].to!float;
+         ubyte[] v = nativeToBigEndian!float(ff).swapByteOrder;
+         f.writeArea(MemoryArea.DM, 32_002, v);
+         writefln("DM32_002: %( 0x%x %)", v);
       } else {
          help;
       }
@@ -50,4 +61,6 @@ void help() {
    writeln("\tr100: read D100");
    writeln("\tr1100: read D1100");
    writeln("\tw0: write 0x0a0b into D00");
+   writeln("\tf: read 32_000 as float");
+   writeln("\twf x: write x into 32_000 as float");
 }

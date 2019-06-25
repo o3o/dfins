@@ -56,8 +56,7 @@ unittest {
  * Returns:
  *   An array of ubyte
  */
-deprecated("Will be removed, use nativeToBigEndian")
-ubyte[] toBytes(T)(T[] input) {
+deprecated("Will be removed, use nativeToBigEndian") ubyte[] toBytes(T)(T[] input) {
    import std.array : appender;
    import std.bitmanip : append;
 
@@ -70,6 +69,7 @@ ubyte[] toBytes(T)(T[] input) {
 ///
 unittest {
    import std.bitmanip : nativeToBigEndian;
+
    assert([0x8034].toBytes!ushort() == [0x80, 0x34]);
    ushort[] buf = [0x8034, 0x2010];
    assert(buf.toBytes!ushort() == [0x80, 0x34, 0x20, 0x10]);
@@ -92,8 +92,7 @@ unittest {
  * Returns:
  *   An ushort array that rapresents words
  */
-deprecated("Will be removed, use nativeToLittleEndian")
-ushort[] toWordsLE(ubyte[] bytes) {
+deprecated("Will be removed, use nativeToLittleEndian") ushort[] toWordsLE(ubyte[] bytes) {
    import std.bitmanip : read;
 
    ushort[] dm;
@@ -123,8 +122,7 @@ unittest {
  * Returns:
  *   An ushort array that rapresents words
  */
-deprecated("Will be removed, use read")
-ushort[] toWords(ubyte[] bytes) {
+deprecated("Will be removed, use read") ushort[] toWords(ubyte[] bytes) {
    import std.bitmanip : read;
 
    ushort[] dm;
@@ -139,7 +137,8 @@ ushort[] toWords(ubyte[] bytes) {
 
 ///
 unittest {
-   import std.bitmanip: read, peek;
+   import std.bitmanip : read, peek;
+
    // default endianess is Endian.bigEndian
    // to change
    // buf.read!(ushort, Endian.littleEndian);
@@ -165,7 +164,8 @@ unittest {
    //0x4048F5C3 => 3.14
    ubyte[] pi = [0x40, 0x48, 0xF5, 0xC3, 0x50];
 
-   import std.math: approxEqual;
+   import std.math : approxEqual;
+
    assert(approxEqual(pi.read!float, 3.14));
 }
 
@@ -178,8 +178,7 @@ unittest {
  *  T = The integral type to convert the first `T.sizeof / 2` words to.
  *  words = The array of word to convert
  */
-deprecated("Will be removed, use bitmanip: peek")
-T peek(T)(ushort[] words) {
+deprecated("Will be removed, use bitmanip: peek") T peek(T)(ushort[] words) {
    return peek!T(words, 0);
 }
 ///
@@ -204,8 +203,7 @@ unittest {
  *  words = The array of word to convert
  *  index = The index to start reading from (instead of starting at the front).
  */
-deprecated("Will be removed, use bitmanip: peek")
-T peek(T)(ushort[] words, size_t index) {
+deprecated("Will be removed, use bitmanip: peek") T peek(T)(ushort[] words, size_t index) {
    import std.bitmanip : peek;
 
    ubyte[] buffer = toBytesLE(words);
@@ -307,8 +305,8 @@ unittest {
  *  T = The integral type to convert the first `T.sizeof / 2` word to.
  *  input = The input range of words to convert
  */
-deprecated("Will be removed, use bitmanip: read")
-T pop(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ushort)) {
+deprecated("Will be removed, use bitmanip: read") T pop(T, R)(ref R input)
+      if ((isInputRange!R) && is(ElementType!R : const ushort)) {
    import std.traits : isIntegral, isSigned;
 
    static if (isIntegral!T) {
@@ -327,6 +325,7 @@ T pop(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ushort
  */
 unittest {
    import std.bitmanip : read;
+
    ushort[] asPeek = [0x645A, 0x3ffb];
    assert(asPeek.pop!float == 1.964F);
    assert(asPeek.length == 0);
@@ -650,6 +649,7 @@ private union double_ulong {
 @("PC2PLC")
 unittest {
    import std.bitmanip : nativeToBigEndian;
+
    assert(nativeToBigEndian!uint(0x8034) == [0, 0, 0x80, 0x34]);
    assert(nativeToBigEndian!uint(0x010464) == [0x0, 0x01, 0x04, 0x64]);
 
@@ -662,17 +662,55 @@ unittest {
 @("PLC2PC")
 unittest {
    import std.bitmanip : read;
-   import std.math: approxEqual;
+   import std.math : approxEqual;
+
    // dfmt off
    ubyte[] buf = [
       0x0, 0x10,
-      0x40, 0x48, 0xF5, 0xC3,
-      0x41, 0x9D, 0x1E, 0xB8
+      0x40, 0x48, 0xF5, 0xC3, // 3.14
+      0x41, 0x9D, 0x1E, 0xB8, // 19.64
+      0xF5, 0xC3, 0x40, 0x48,
    ];
    // dfmt on
    //assert(buf.peek!ushort == 0x10);
    assert(buf.read!ushort == 0x10);
    assert(approxEqual(buf.read!float, 3.14));
    assert(approxEqual(buf.read!float, 19.64));
+   //assert(approxEqual(buf.read!float, 3.14));
 }
 
+/**
+ * Swap byte order of items in an array in place.
+ *
+ * Params:
+ *  L = Lenght
+ *  array = Buffer with values to fix byte order of.
+ */
+ubyte[] swapByteOrder(int L = 4)(ubyte[] data) @trusted pure nothrow if (L == 2 || L == 4 || L == 0) {
+   import std.algorithm.mutation : swapAt;
+   ubyte[] array = data.dup;
+
+   size_t ptr;
+   static if (L == 2) {
+      while (ptr < array.length - 1) {
+         array.swapAt(ptr, ptr + 1);
+         ptr += 2;
+      }
+   } else static if (L == 4) {
+      while (ptr < array.length - 3) {
+         array.swapAt(ptr + 0, ptr + 2);
+         array.swapAt(ptr + 1, ptr + 3);
+         ptr += 4;
+      }
+   }
+   return array;
+}
+
+unittest {
+   import std.algorithm.comparison : equal;
+
+   ubyte[] a = [0xF5, 0xC3, 0x40, 0x48, 0xFF];
+
+   assert(a.swapByteOrder.equal([0x40, 0x48, 0xF5, 0xc3, 0xFF]));
+   assert(a.swapByteOrder!(2).equal([0xc3, 0xF5, 0x48, 0x40, 0xFF]));
+}

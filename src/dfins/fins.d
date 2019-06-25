@@ -431,7 +431,6 @@ class FinsClient {
       //memory area code
       cmdBlock ~= cast(ubyte)area;
       cmdBlock ~= getAddrBlock(start, size);
-
       return sendFinsCommand(0x01, 0x01, cmdBlock);
    }
 
