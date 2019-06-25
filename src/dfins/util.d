@@ -135,118 +135,41 @@ unittest {
  *  input = The input range of ubyte to convert
  */
 T readFins(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte)) {
-   import std.traits : isIntegral, isSigned;
+   import std.bitmanip : read, bigEndianToNative;
+   import std.algorithm.mutation : swapAt;
 
-   static if (isIntegral!T) {
-      return popInteger!(R, T.sizeof / 2, isSigned!T)(input);
-   } else static if (is(T == float)) {
-      return uint2float(popInteger!(R, 2, false)(input));
-   } else {
+   static if (is(T == int) || is(T == uint) || is(T == float))  {
+        ubyte[T.sizeof] bytes;
+        foreach (ref e; bytes) {
+            e = input.front;
+            input.popFront();
+        }
+        bytes.swapAt(0, 2);
+        bytes.swapAt(1, 3);
+        return bigEndianToNative!T(bytes);
+   } else static if (is(T == double)) {
       static assert(false, "Unsupported type " ~ T.stringof);
+   } else {
+      return input.read!(T);
    }
 }
 
-/**
- * $(D pop!float) example
- */
 unittest {
    import std.bitmanip : read;
-
-   ushort[] asPeek = [0x645A, 0x3ffb];
-   assert(asPeek.pop!float == 1.964F);
-   assert(asPeek.length == 0);
-
-   // float.sizeOf is 4bytes => 2 word
-   ushort[] input = [0x1eb8, 0xc19d];
-   assert(input.length == 2);
-   assert(pop!float(input) == -19.64F);
-   assert(input.length == 0);
-
-   input = [0x0, 0xBF00, 0x0, 0x3F00];
-   assert(input.pop!float == -0.5F);
-   assert(pop!float(input) == 0.5F);
+   import std.math : approxEqual;
 
    // dfmt off
    ubyte[] buf = [
-      0xBF, 0x0, 0x0, 0x0,
-      0x3F, 0x0, 0x0, 0x0
+      0x0, 0x10,
+      0xF5, 0xC3, 0x40, 0x48, // 3.14
+      0x1E, 0xB8, 0x41, 0x9D // 19.64
    ];
    // dfmt on
-   assert(buf.read!float == -0.5F);
-   assert(buf.read!float == 0.5F);
+   assert(buf.readFins!ushort == 0x10);
+   assert(approxEqual(buf.readFins!float, 3.14));
+   assert(approxEqual(buf.readFins!float, 19.64));
 }
 
-/**
- * $(D pop!double) examples.
- *
- * A double has size 8 bytes => 4word
- */
-unittest {
-   ushort[] input = [0x0, 0x0, 0x0, 0x3FE0];
-   assert(input.length == 4);
-
-   assert(pop!double(input) == 0.5);
-   assert(input.length == 0);
-
-   input = [0x0, 0x0, 0x0, 0xBFE0];
-   assert(pop!double(input) == -0.5);
-
-   input = [0x00, 0x01, 0x02, 0x03];
-   assert(input.length == 4);
-   assert(pop!int(input) == 0x10000);
-   assert(input.length == 2);
-   assert(pop!int(input) == 0x30002);
-   assert(input.length == 0);
-}
-
-/**
- * pop!ushort and short examples
- */
-unittest {
-   ushort[] input = [0xFFFF, 0xFFFF, 0xFFFB, 0xFFFB];
-   assert(pop!ushort(input) == 0xFFFF);
-   assert(pop!short(input) == -1);
-   assert(pop!ushort(input) == 0xFFFB);
-   assert(pop!short(input) == -5);
-}
-
-unittest {
-   ushort[] input = [0x1eb8, 0xc19d, 0x0, 0xBF00, 0x0, 0x3F00, 0x0, 0x0, 0x0, 0x3FE0, 0x0, 0x0, 0x0, 0xBFE0, 0x00,
-      0x01, 0x02, 0x03, 0xFFFF, 0xFFFF, 0xFFFB, 0xFFFB];
-
-   assert(pop!float(input) == -19.64F);
-   assert(pop!float(input) == -0.5F);
-   assert(pop!float(input) == 0.5F);
-
-   assert(pop!double(input) == 0.5);
-   assert(pop!double(input) == -0.5);
-
-   assert(pop!int(input) == 0x10000);
-   assert(pop!int(input) == 0x30002);
-
-   assert(pop!ushort(input) == 0xFFFF);
-   assert(pop!short(input) == -1);
-   assert(pop!ushort(input) == 0xFFFB);
-   assert(pop!short(input) == -5);
-}
-
-unittest {
-   ushort[] shortBuffer = [0x645A];
-   assert(shortBuffer.length == 1);
-   //shortBuffer.pop!float().shouldThrow!Exception;
-
-   ushort[] bBuffer = [0x0001, 0x0002, 0x0003];
-   assert(bBuffer.length == 3);
-
-   assert(bBuffer.pop!ushort == 1);
-   assert(bBuffer.length == 2);
-
-   assert(bBuffer.pop!ushort == 2);
-   assert(bBuffer.length == 1);
-
-   assert(bBuffer.pop!ushort == 3);
-   assert(bBuffer.length == 0);
-}
 
 /**
  * Writes numeric type $(I T) into a output range of $(D ushort).
@@ -280,6 +203,7 @@ void write(T, R)(ref R output, T n) if (isOutputRange!(R, ushort)) {
    }
 }
 
+/+
 /**
  * Write float and double
  */
@@ -310,6 +234,7 @@ unittest {
    app.write!uint(0x1720_8034);
    assert(app.data == [5, 0x645A, 0x3ffb, 0x8034, 0x1720]);
 }
++/
 
 private void writeInteger(R, int numWords)(ref R output, IntegerLargerThan!numWords n) if (isOutputRange!(R, ushort)) {
    import std.traits : Unsigned;
