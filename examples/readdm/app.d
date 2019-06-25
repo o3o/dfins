@@ -52,9 +52,16 @@ void main(string[] args) {
       }  else if (args[1] == "wf") {
          import std.conv : to;
          float ff = args[2].to!float;
-         ubyte[] v = nativeToBigEndian!float(ff).swapByteOrder;
+         ubyte[] v = nativeToFins!float(ff);
          f.writeArea(MemoryArea.DM, 32_002, v);
          writefln("DM32_002: %( 0x%x %)", v);
+      }  else if (args[1] == "s") {
+         // 30_026 20 char
+         ubyte[] ss = f.readArea(MemoryArea.DM, 30_006, 10);
+         writefln("DM30_006: %( 0x%x %)", ss);
+      }  else if (args[1] == "d") {
+         ubyte[] dd = f.readArea(MemoryArea.DM, 30_026, 2);
+         writefln("DM30_026: %( 0x%x %)", dd);
       } else {
          help;
       }
@@ -71,5 +78,7 @@ void help() {
    writeln("\tr1100: read D1100");
    writeln("\tw0: write 0x0a0b into D00");
    writeln("\tf: read 32_000 as float");
+   writeln("\ts: read 32_006 as string");
+   writeln("\td: read 32_026 as DWORD");
    writeln("\twf x: write x into 32_000 as float");
 }

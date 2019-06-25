@@ -402,7 +402,7 @@ class FinsClient {
    }
    do {
       import std.conv : to;
-      import dfins.util : BYTES_PER_WORD;
+      enum BYTES_PER_WORD = 2;
 
       ubyte[] text;
       //memory area code

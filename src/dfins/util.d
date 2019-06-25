@@ -11,49 +11,6 @@ import std.range;
 import std.system : Endian;
 
 /**
- * Bytes per each word.
- *
- * A word is a $(D ushort), so each word has 2 bytes.
- */
-enum BYTES_PER_WORD = 2;
-
-/**
- * Converts an array of type T into an ubyte array using BigEndian.
- *
- * Params:
- *   input = array of type T to convert
- *
- * Returns:
- *   An array of ubyte
- */
-deprecated("Will be removed, use nativeToBigEndian") ubyte[] toBytes(T)(T[] input) {
-   import std.array : appender;
-   import std.bitmanip : append;
-
-   auto buffer = appender!(const(ubyte)[])();
-   foreach (dm; input) {
-      buffer.append!(T, Endian.bigEndian)(dm);
-   }
-   return buffer.data.dup;
-}
-///
-unittest {
-   import std.bitmanip : nativeToBigEndian;
-
-   assert([0x8034].toBytes!ushort() == [0x80, 0x34]);
-   ushort[] buf = [0x8034, 0x2010];
-   assert(buf.toBytes!ushort() == [0x80, 0x34, 0x20, 0x10]);
-   assert(buf.length == 2);
-
-   //import std.stdio;
-   //writefln("%( 0x%x %)", [0x8034].toBytes!uint());
-   assert([0x8034].toBytes!uint() == [0, 0, 0x80, 0x34]);
-   assert([0x010464].toBytes!uint() == [0x0, 0x01, 0x04, 0x64]);
-   assert(nativeToBigEndian!uint(0x8034) == [0, 0, 0x80, 0x34]);
-   assert(nativeToBigEndian!uint(0x010464) == [0x0, 0x01, 0x04, 0x64]);
-}
-
-/**
  * Converts ushort value into BDC format
  *
  * Params:
@@ -77,6 +34,7 @@ ushort toBCD(ushort dec) {
       return bcd;
    }
 }
+
 ///
 unittest {
    assert(0.toBCD() == 0);
@@ -126,27 +84,27 @@ unittest {
 }
 
 /**
- * Takes an input range of ubyte ($(D ushort)) and converts the first $(D T.sizeof)
+ * Takes an input range of ubyte and converts the first $(D T.sizeof)
  * words to $(D T).
  * The array is consumed.
  *
  * Params:
- *  T = The type to convert the first `T.sizeof` o.
+ *  T = The type to convert the first `T.sizeof` bytes
  *  input = The input range of ubyte to convert
  */
 T readFins(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte)) {
    import std.bitmanip : read, bigEndianToNative;
    import std.algorithm.mutation : swapAt;
 
-   static if (is(T == int) || is(T == uint) || is(T == float))  {
-        ubyte[T.sizeof] bytes;
-        foreach (ref e; bytes) {
-            e = input.front;
-            input.popFront();
-        }
-        bytes.swapAt(0, 2);
-        bytes.swapAt(1, 3);
-        return bigEndianToNative!T(bytes);
+   static if (is(T == int) || is(T == uint) || is(T == float)) {
+      ubyte[T.sizeof] bytes;
+      foreach (ref e; bytes) {
+         e = input.front;
+         input.popFront();
+      }
+      bytes.swapAt(0, 2);
+      bytes.swapAt(1, 3);
+      return bigEndianToNative!T(bytes);
    } else static if (is(T == double)) {
       static assert(false, "Unsupported type " ~ T.stringof);
    } else {
@@ -165,7 +123,8 @@ unittest {
       0x1E, 0xB8, 0x41, 0x9D, // 19.64
       0xF5, 0xC3, 0x40, 0x48, // 1_078_523_331
       0xF5, 0xC3, 0x40, 0x48, // 1_078_523_331
-      0x0A, 0x3D, 0xBF, 0xB7
+      0x0A, 0x3D, 0xBF, 0xB7,
+      0x0C, 0x0D, 0x0A, 0xB // 0x0a0b0c0d
    ];
    // dfmt on
    assert(buf.readFins!ushort == 0x10);
@@ -174,83 +133,44 @@ unittest {
    assert(buf.readFins!uint == 1_078_523_331);
    assert(buf.readFins!int == 1_078_523_331);
    assert(buf.readFins!int == -1_078_523_331);
+   assert(buf.readFins!uint == 0x0a0b0c0d);
 }
 
-
 /**
- * Writes numeric type $(I T) into a output range of $(D ushort).
- *
- * Params:
- *  n = The numeric type to write into output range
- *  output = The output range of word to convert
- *
- * Examples:
- * --------------------
- * ushort[] arr;
- * auto app = appender(arr);
- * write!float(app, 1.0f);
- *
- * auto app = appender!(const(ushort)[]);
- * app.write!ushort(5);
- * app.data.shouldEqual([5]);
- * --------------------
+ * Converts the given value from the native endianness to Fins format and
+ * returns it as a `ubyte[n]` where `n` is the size of the given type.
  */
-void write(T, R)(ref R output, T n) if (isOutputRange!(R, ushort)) {
-   import std.traits : isIntegral;
+ubyte[] nativeToFins(T)(T val) pure nothrow {
+   import std.bitmanip : nativeToBigEndian;
+   import std.algorithm.mutation : swapAt;
 
-   static if (isIntegral!T) {
-      writeInteger!(R, T.sizeof / 2)(output, n);
-   } else static if (is(T == float)) {
-      writeInteger!(R, 2)(output, float2uint(n));
+   static if (is(T == int) || is(T == uint) || is(T == float)) {
+      ubyte[] bytes = nativeToBigEndian!T(val).dup;
+      bytes.swapAt(0, 2);
+      bytes.swapAt(1, 3);
+      return bytes;
+   } else static if (is(T == string)) {
+      ubyte[] blob = cast(ubyte[])val;
+      if (blob.length & 1) {
+         blob ~= 0x0;
+      }
+      return blob.swapByteOrder!2;
    } else static if (is(T == double)) {
-      writeInteger!(R, 4)(output, double2ulong(n));
-   } else {
       static assert(false, "Unsupported type " ~ T.stringof);
+   } else {
+      return nativeToBigEndian!T(val);
    }
 }
 
-/+
-/**
- * Write float and double
- */
 unittest {
-   ushort[] arr;
-   auto app = appender(arr);
-   write!float(app, 1.0f);
+   import std.algorithm.comparison : equal;
 
-   app.write!double(2.0);
-
-   ushort[] expected = [0, 0x3f80, 0, 0, 0, 0x4000];
-   assert(app.data == expected);
-}
-
-/**
- * Write ushort and int
- */
-unittest {
-   import std.array : appender;
-
-   auto app = appender!(const(ushort)[]);
-   app.write!ushort(5);
-   assert(app.data == [5]);
-
-   app.write!float(1.964F);
-   assert(app.data == [5, 0x645A, 0x3ffb]);
-
-   app.write!uint(0x1720_8034);
-   assert(app.data == [5, 0x645A, 0x3ffb, 0x8034, 0x1720]);
-}
-+/
-
-private void writeInteger(R, int numWords)(ref R output, IntegerLargerThan!numWords n) if (isOutputRange!(R, ushort)) {
-   import std.traits : Unsigned;
-
-   alias T = IntegerLargerThan!numWords;
-   auto u = cast(Unsigned!T)n;
-   foreach (i; 0 .. numWords) {
-      immutable(ushort) b = (u >> (i * 16)) & 0xFFFF;
-      output.put(b);
-   }
+   ubyte[] abcFins = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
+   ubyte[] abc = nativeToFins!string("ABCDEFGHI");
+   assert(equal(abc, abcFins));
+   assert(equal(nativeToFins!float(3.14), [0xF5, 0xC3, 0x40, 0x48]));
+   //0x0a0b0c0d = 168_496_141
+   assert(equal(nativeToFins!uint(0x0a0b0c0d), [0x0C, 0x0D, 0x0A, 0xB]));
 }
 
 @("PC2PLC")
@@ -287,7 +207,7 @@ unittest {
 }
 
 /**
- * Swap byte order of items in an array in place.
+ * Swap byte order of items in an array.
  *
  * Params:
  *  L = Lenght
@@ -295,6 +215,7 @@ unittest {
  */
 ubyte[] swapByteOrder(int L = 4)(ubyte[] data) @trusted pure nothrow if (L == 2 || L == 4 || L == 0) {
    import std.algorithm.mutation : swapAt;
+
    ubyte[] array = data.dup;
 
    size_t ptr;
