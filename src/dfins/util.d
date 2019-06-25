@@ -158,11 +158,12 @@ ubyte[] nativeToFins(T)(T val) pure nothrow {
    } else static if (is(T == double)) {
       static assert(false, "Unsupported type " ~ T.stringof);
    } else {
-      return nativeToBigEndian!T(val);
+      return nativeToBigEndian!T(val).dup;
    }
 }
 
 unittest {
+   import std.bitmanip : nativeToBigEndian;
    import std.algorithm.comparison : equal;
 
    ubyte[] abcFins = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
@@ -171,6 +172,9 @@ unittest {
    assert(equal(nativeToFins!float(3.14), [0xF5, 0xC3, 0x40, 0x48]));
    //0x0a0b0c0d = 168_496_141
    assert(equal(nativeToFins!uint(0x0a0b0c0d), [0x0C, 0x0D, 0x0A, 0xB]));
+   assert(equal(nativeToFins!ushort(0x0a0b), [0x0a, 0x0b]));
+   ubyte[] ab = [0xa, 0xb];
+   assert(equal(cast(ubyte[])nativeToBigEndian!ushort(0x0a0b), ab));
 }
 
 @("PC2PLC")
