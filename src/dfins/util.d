@@ -136,6 +136,92 @@ unittest {
    assert(buf.readFins!uint == 0x0a0b0c0d);
 }
 
+
+/**
+ * Takes an input range of ubyte and converts the first $(D L) bytes to string.
+ *
+ * L must be even
+ * The array is consumed.
+ *
+ * Params:
+ *  T = The type to convert the first `T.sizeof` bytes
+ *  input = The input range of ubyte to convert
+ */
+string readString(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte) && !(L & 1)) {
+   import std.algorithm.iteration: filter;
+   import std.array : array;
+
+   ubyte[L] bytes;
+
+   foreach (ref e; bytes) {
+      if (input.empty) {
+         break;
+      }
+      e = input.front;
+      input.popFront();
+   }
+   //ubyte[] stream = bytes.swapByteOrder!(2).filter!(a => a > 0x1F && a < 0x7F).take(L).array;
+   ubyte[] stream = bytes.swapByteOrder!(2).filter!(a => a > 0x1F && a < 0x7F).array;
+   return cast(string)stream;
+}
+
+unittest {
+   ubyte[] abc00 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
+   import std.stdio;
+   //writefln(">%s<", abc00.readString!9);
+   //assert(abc00.readString!9 == "ABCDEFGHI");
+   string s0 = abc00.readString!10;
+   assert(s0.length == 9);
+   assert(s0 == "ABCDEFGHI");
+
+   ubyte[] abc01 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
+   string s1 = abc01.readString!40;
+   assert(s1.length == 9);
+   assert(s1 == "ABCDEFGHI");
+
+   ubyte[] abc02 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
+   string s2 = abc02.readString!4;
+   assert(s2.length == 4);
+   assert(s2 == "ABCD");
+   assert(abc02.readString!2 == "EF");
+   assert(abc02.readString!4 == "GHI");
+
+   ubyte[] abc03 = [0x42, 0x41, 0x00, 0x00, 0x00, 0x00, 0x48, 0x47, 0x0, 0x49];
+   string s3 = abc03.readString!4;
+   assert(s3 == "AB");
+}
+
+/+string readString(R)(ref R input, size_t length) if ((isInputRange!R) && is(ElementType!R : const ubyte)) {
+   if (length & 1) {
+      ++length;
+   }
+   size_t ptr;
+   ubyte[] bytes;
+   while (!input.empty && ptr < length) {
+      bytes ~= input.front;
+      input.popFront();
+      ++ptr;
+   }
+
+   ubyte[] stream = bytes.swapByteOrder!2;
+   return cast(string)stream;
+}
+
+unittest {
+   import std.algorithm.comparison : equal;
+   ubyte[] abc00 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
+   import std.stdio;
+   string a = abc00.readString(9);
+   writefln(">%s< len %s", a, a.length);
+   assert(a.length == 9);
+   //assert(abc00.readString!9 == "ABCDEFGHI");
+   //assert(abc00.readString(9) == "ABCDEFGHI");
+   ubyte[] abc01 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
+   writefln(">%s<", abc01.readString(40));
+   //assert(abc01.readString!40 == "ABCDEFGHI");
+}
++/
+
 /**
  * Converts the given value from the native endianness to Fins format and
  * returns it as a `ubyte[n]` where `n` is the size of the given type.
