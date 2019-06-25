@@ -18,36 +18,6 @@ import std.system : Endian;
 enum BYTES_PER_WORD = 2;
 
 /**
- * Converts an array of type T into an ubyte array using LittleEndian.
- *
- * Params:
- *   input = array of type T to convert
- *
- * Returns:
- *   An array of ubyte
- */
-ubyte[] toBytesLE(T)(T[] input) {
-   import std.array : appender;
-   import std.bitmanip : append;
-
-   auto buffer = appender!(const(ubyte)[])();
-   foreach (dm; input) {
-      buffer.append!(T, Endian.littleEndian)(dm);
-   }
-   return buffer.data.dup;
-}
-///
-unittest {
-   assert([0x8034].toBytesLE!ushort() == [0x34, 0x80]);
-   ushort[] buf = [0x8034, 0x2010];
-   assert(buf.toBytesLE!ushort() == [0x34, 0x80, 0x10, 0x20]);
-   assert(buf.length == 2);
-
-   assert([0x8034].toBytesLE!uint() == [0x34, 0x80, 0, 0]);
-   assert([0x010464].toBytesLE!uint() == [0x64, 0x04, 1, 0]);
-}
-
-/**
  * Converts an array of type T into an ubyte array using BigEndian.
  *
  * Params:
@@ -81,147 +51,6 @@ unittest {
    assert([0x010464].toBytes!uint() == [0x0, 0x01, 0x04, 0x64]);
    assert(nativeToBigEndian!uint(0x8034) == [0, 0, 0x80, 0x34]);
    assert(nativeToBigEndian!uint(0x010464) == [0x0, 0x01, 0x04, 0x64]);
-}
-
-/**
- * Converts an array of bytes into words $(D ushort) array using LittleEndian.
- *
- * Params:
- *   bytes = array to convert
- *
- * Returns:
- *   An ushort array that rapresents words
- */
-deprecated("Will be removed, use nativeToLittleEndian") ushort[] toWordsLE(ubyte[] bytes) {
-   import std.bitmanip : read;
-
-   ushort[] dm;
-   while (bytes.length >= BYTES_PER_WORD) {
-      dm ~= bytes.read!(ushort, Endian.littleEndian);
-   }
-   if (bytes.length > 0) {
-      dm ~= bytes[0];
-   }
-   return dm;
-}
-
-///
-unittest {
-   assert([0x10].toWordsLE() == [0x10]);
-   assert([0, 0xAB].toWordsLE() == [0xAB00]);
-   assert([0x20, 0x0].toWordsLE() == [0x20]);
-   assert([0x10, 0x20, 0x30, 0x40, 0x50].toWordsLE() == [0x2010, 0x4030, 0x50]);
-}
-
-/**
- * Converts an array of bytes into words $(D ushort) array using BigEndian.
- *
- * Params:
- *   bytes = array to convert
- *
- * Returns:
- *   An ushort array that rapresents words
- */
-deprecated("Will be removed, use read") ushort[] toWords(ubyte[] bytes) {
-   import std.bitmanip : read;
-
-   ushort[] dm;
-   while (bytes.length >= BYTES_PER_WORD) {
-      dm ~= bytes.read!(ushort, Endian.bigEndian);
-   }
-   if (bytes.length > 0) {
-      dm ~= bytes[0];
-   }
-   return dm;
-}
-
-///
-unittest {
-   import std.bitmanip : read, peek;
-
-   // default endianess is Endian.bigEndian
-   // to change
-   // buf.read!(ushort, Endian.littleEndian);
-   assert([0x10].toWords() == [0x10]);
-   ubyte[] buf = [0x0, 0x10];
-   assert(buf.peek!ushort == 0x10);
-   assert(buf.read!ushort == 0x10);
-
-   buf = [0x0, 0xAB];
-   assert([0, 0xAB].toWords() == [0xAB]);
-   assert(buf.peek!ushort() == 0xAB);
-
-   buf = [0x20, 0x0];
-   assert([0x20, 0x0].toWords() == [0x2000]);
-   assert(buf.peek!ushort == 0x2000);
-
-   assert([0x10, 0x20, 0x30, 0x40, 0x50].toWords() == [0x1020, 0x3040, 0x50]);
-
-   ubyte[] buffer = [0x10, 0x20, 0x30, 0x40, 0x0, 0x50];
-   assert(buffer.read!ushort == 0x1020);
-   assert(buffer.read!ushort == 0x3040);
-   assert(buffer.read!ushort == 0x50);
-   //0x4048F5C3 => 3.14
-   ubyte[] pi = [0x40, 0x48, 0xF5, 0xC3, 0x50];
-
-   import std.math : approxEqual;
-
-   assert(approxEqual(pi.read!float, 3.14));
-}
-
-/**
- * Takes an array of word $(D ushort) and converts the first $(D T.sizeof / 2)
- * word to $(D T).
- * The array is $(B not) consumed.
- *
- * Params:
- *  T = The integral type to convert the first `T.sizeof / 2` words to.
- *  words = The array of word to convert
- */
-deprecated("Will be removed, use bitmanip: peek") T peek(T)(ushort[] words) {
-   return peek!T(words, 0);
-}
-///
-unittest {
-   ushort[] words = [0x645A, 0x3ffb];
-   assert(words.peek!float == 1.964F);
-   assert(words.length == 2);
-
-   ushort[] odd = [0x645A, 0x3ffb, 0xffaa];
-   assert(odd.peek!float == 1.964F);
-   assert(odd.length == 3);
-}
-
-/**
- * Takes an array of word ($(D ushort)) and converts the first $(D T.sizeof / 2)
- * word to $(D T) starting from index `index`.
- *
- * The array is $(B not) consumed.
- *
- * Params:
- *  T = The integral type to convert the first `T.sizeof / 2` word to.
- *  words = The array of word to convert
- *  index = The index to start reading from (instead of starting at the front).
- */
-deprecated("Will be removed, use bitmanip: peek") T peek(T)(ushort[] words, size_t index) {
-   import std.bitmanip : peek;
-
-   ubyte[] buffer = toBytesLE(words);
-   return buffer.peek!(T, Endian.littleEndian)(index * BYTES_PER_WORD);
-}
-///
-unittest {
-   assert([0x645A, 0x3ffb].peek!float(0) == 1.964F);
-   assert([0, 0, 0x645A, 0x3ffb].peek!float(2) == 1.964F);
-   assert([0, 0, 0x645A, 0x3ffb].peek!float(0) == 0);
-   assert([0x80, 0, 0].peek!ushort(0) == 128);
-   assert([0xFFFF].peek!short(0) == -1);
-   assert([0xFFFF].peek!ushort(0) == 65_535);
-   assert([0xFFF7].peek!ushort(0) == 65_527);
-   assert([0xFFF7].peek!short(0) == -9);
-   assert([0xFFFB].peek!short(0) == -5);
-   assert([0xFFFB].peek!ushort(0) == 65_531);
-   assert([0x8000].peek!short(0) == -32_768);
 }
 
 /**
@@ -297,24 +126,21 @@ unittest {
 }
 
 /**
- * Takes an input range of words ($(D ushort)) and converts the first $(D T.sizeof / 2)
+ * Takes an input range of ubyte ($(D ushort)) and converts the first $(D T.sizeof)
  * words to $(D T).
  * The array is consumed.
  *
  * Params:
- *  T = The integral type to convert the first `T.sizeof / 2` word to.
- *  input = The input range of words to convert
+ *  T = The type to convert the first `T.sizeof` o.
+ *  input = The input range of ubyte to convert
  */
-deprecated("Will be removed, use bitmanip: read") T pop(T, R)(ref R input)
-      if ((isInputRange!R) && is(ElementType!R : const ushort)) {
+T readFins(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte)) {
    import std.traits : isIntegral, isSigned;
 
    static if (isIntegral!T) {
       return popInteger!(R, T.sizeof / 2, isSigned!T)(input);
    } else static if (is(T == float)) {
       return uint2float(popInteger!(R, 2, false)(input));
-   } else static if (is(T == double)) {
-      return ulong2double(popInteger!(R, 4, false)(input));
    } else {
       static assert(false, "Unsupported type " ~ T.stringof);
    }
@@ -423,80 +249,6 @@ unittest {
 }
 
 /**
- * Takes an input range of words ($(D ushort)) and converts the first `numWords`
- * word's to $(D T).
- * The array is consumed.
- *
- * Params:
- *  R = The integral type of innput range
- *  numWords = Number of words to convert
- *  wantSigned = Get signed value
- *  input = The input range of word to convert
- */
-private auto popInteger(R, int numWords, bool wantSigned)(ref R input)
-      if ((isInputRange!R) && is(ElementType!R : const ushort)) {
-   import std.traits : Signed;
-
-   alias T = IntegerLargerThan!(numWords);
-   T result = 0;
-
-   foreach (i; 0 .. numWords) {
-      result |= (cast(T)(popDM(input)) << (16 * i));
-   }
-
-   static if (wantSigned) {
-      return cast(Signed!T)result;
-   } else {
-      return result;
-   }
-}
-
-unittest {
-   ushort[] input = [0x00, 0x01, 0x02, 0x03];
-   assert(popInteger!(ushort[], 2, false)(input) == 0x10000);
-   assert(popInteger!(ushort[], 2, false)(input) == 0x30002);
-   assert(input.length == 0);
-
-   input = [0x01, 0x02, 0x03, 0x04];
-   assert(popInteger!(ushort[], 3, false)(input) == 0x300020001);
-
-   input = [0x01, 0x02];
-   //assert(popInteger!(ushort[], 3, false)(input).shouldThrow!Exception;
-
-   input = [0x00, 0x8000];
-   assert(popInteger!(ushort[], 2, false)(input) == 0x8000_0000);
-
-   input = [0xFFFF, 0xFFFF];
-   assert(popInteger!(ushort[], 2, true)(input) == -1);
-
-   input = [0xFFFF, 0xFFFF, 0xFFFB, 0xFFFB];
-   assert(popInteger!(ushort[], 1, false)(input) == 0xFFFF);
-   assert(popInteger!(ushort[], 1, true)(input) == -1);
-   assert(popInteger!(ushort[], 1, false)(input) == 0xFFFB);
-   assert(popInteger!(ushort[], 1, true)(input) == -5);
-}
-
-private template IntegerLargerThan(int numWords) if (numWords > 0 && numWords <= 4) {
-   static if (numWords == 1) {
-      alias IntegerLargerThan = ushort;
-   } else static if (numWords == 2) {
-      alias IntegerLargerThan = uint;
-   } else {
-      alias IntegerLargerThan = ulong;
-   }
-}
-
-private ushort popDM(R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ushort)) {
-   if (input.empty) {
-      throw new Exception("Expected a ushort, but found end of input");
-   }
-
-   const(ushort) d = input.front;
-   input.popFront();
-   return d;
-}
-
-/**
  * Writes numeric type $(I T) into a output range of $(D ushort).
  *
  * Params:
@@ -568,82 +320,6 @@ private void writeInteger(R, int numWords)(ref R output, IntegerLargerThan!numWo
       immutable(ushort) b = (u >> (i * 16)) & 0xFFFF;
       output.put(b);
    }
-}
-
-/**
- * Convert $(D uint) to $(D float)
- */
-private float uint2float(uint x) pure nothrow {
-   float_uint fi;
-   fi.i = x;
-   return fi.f;
-}
-
-unittest {
-   // see http://gregstoll.dyndns.org/~gregstoll/floattohex/
-   assert(uint2float(0x24369620) == 3.959212E-17F);
-   assert(uint2float(0x3F000000) == 0.5F);
-   assert(uint2float(0xBF000000) == -0.5F);
-   assert(uint2float(0x0) == 0);
-   assert(uint2float(0x419D1EB8) == 19.64F);
-   assert(uint2float(0xC19D1EB8) == -19.64F);
-   assert(uint2float(0x358637bd) == 0.000001F);
-   assert(uint2float(0xb58637bd) == -0.000001F);
-}
-
-private uint float2uint(float x) pure nothrow {
-   float_uint fi;
-   fi.f = x;
-   return fi.i;
-}
-
-unittest {
-   // see http://gregstoll.dyndns.org/~gregstoll/floattohex/
-   assert(float2uint(3.959212E-17F) == 0x24369620);
-   assert(float2uint(.5F) == 0x3F000000);
-   assert(float2uint(-.5F) == 0xBF000000);
-   assert(float2uint(0x0) == 0);
-   assert(float2uint(19.64F) == 0x419D1EB8);
-   assert(float2uint(-19.64F) == 0xC19D1EB8);
-   assert(float2uint(0.000001F) == 0x358637bd);
-   assert(float2uint(-0.000001F) == 0xb58637bd);
-}
-
-// read/write 64-bits float
-private union float_uint {
-   float f;
-   uint i;
-}
-
-double ulong2double(ulong x) pure nothrow {
-   double_ulong fi;
-   fi.i = x;
-   return fi.f;
-}
-
-unittest {
-   // see http://gregstoll.dyndns.org/~gregstoll/floattohex/
-   assert(ulong2double(0x0) == 0);
-   assert(ulong2double(0x3fe0000000000000) == 0.5);
-   assert(ulong2double(0xbfe0000000000000) == -0.5);
-}
-
-private ulong double2ulong(double x) pure nothrow {
-   double_ulong fi;
-   fi.f = x;
-   return fi.i;
-}
-
-unittest {
-   // see http://gregstoll.dyndns.org/~gregstoll/floattohex/
-   assert(double2ulong(0) == 0);
-   assert(double2ulong(0.5) == 0x3fe0000000000000);
-   assert(double2ulong(-0.5) == 0xbfe0000000000000);
-}
-
-private union double_ulong {
-   double f;
-   ulong i;
 }
 
 @("PC2PLC")
