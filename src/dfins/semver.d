@@ -1,3 +1,3 @@
 module dfins.semver;
-enum VERSION = "0.3.1";
+enum VERSION = "0.3.2";
 enum TAG_VERSION = "v" ~ VERSION;
