@@ -43,9 +43,10 @@ void main(string[] args) {
          writefln("DM100 fins: 0x%x ", d100.readFins!ushort);
          writefln("DM100     : 0x%x ", d101.read!ushort);
       }  else if (args[1] == "f") {
-         import dfins.util: swapByteOrder;
+         import dfins.util: swapBy;
          ubyte[] f2 = f.readArea(MemoryArea.DM, 30_002, 2); // 4 bytes --> 2DM
-         ubyte[] flotta = f2.swapByteOrder!4; // 4 bytes --> 2DM
+         ubyte[] flotta = f.readArea(MemoryArea.DM, 30_002, 2); // 4 bytes --> 2DM
+         flotta.swapBy!4; // 4 bytes --> 2DM
          writefln("DM30_002: %( 0x%x %)", flotta);
          writefln("DM30_002 fins: %s", f2.readFins!float);
          writefln("DM30_002     : %s", flotta.read!float);

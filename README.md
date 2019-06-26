@@ -51,10 +51,15 @@ Or use your favorite DDOC compiler.
 
 ## Omron PLC data example
 
-| Data type | Value       | FINS rep.             | Std rep.                 |
-| ---       | ---         | ---                   | ---                      |
-| float     | 3.14        | 0xF5C34048            | 0x4048F5C3               |
-| string    | 'abcdefghi' | 0x4241444346454847049 | 0x4041424344454547484900 |
-| uint      | 0x0a0b0c0d  | 0x0c0d0a0b            | 0x0a0b0c0d               |
+| Data type    | Value       | FINS rep.             | Std rep.                 |
+| ---          | ---         | ---                   | ---                      |
+| float        | 3.14        | 0xF5C34048            | 0x4048F5C3               |
+| string       | 'abcdefghi' | 0x4241444346454847049 | 0x4041424344454547484900 |
+| uint (32bit) | 0x0a0b0c0d  | 0x0c0d0a0b            | 0x0a0b0c0d               |
 
+|           | float      | string                   | uint       |
+| ---       | ---        | ---                      | ---        |
+| Value     | 3.14       | 'abcdefghi'              | 0x0a0b0c0d |
+| FINS rep. | 0xF5C34048 | 0x4241444346454847049    | 0x0c0d0a0b |
+| Std rep.  | 0x4048F5C3 | 0x4041424344454547484900 | 0x0a0b0c0d |
 

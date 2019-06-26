@@ -147,10 +147,10 @@ unittest {
  *  input = The input range of ubyte to convert
  */
 string readString(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte) && !(L & 1)) {
-   import std.algorithm.iteration: filter;
+   import std.algorithm.iteration : filter;
    import std.array : array;
 
-   ubyte[L] bytes;
+   ubyte[] bytes = new ubyte[](L);
 
    foreach (ref e; bytes) {
       if (input.empty) {
@@ -159,8 +159,8 @@ string readString(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementTy
       e = input.front;
       input.popFront();
    }
-   //ubyte[] stream = bytes.swapByteOrder!(2).filter!(a => a > 0x1F && a < 0x7F).take(L).array;
-   ubyte[] stream = bytes.swapByteOrder!(2).filter!(a => a > 0x1F && a < 0x7F).array;
+   bytes.swapBy!2;
+   ubyte[] stream = bytes.filter!(a => a > 0x1F && a < 0x7F).array;
    return cast(string)stream;
 }
 ///
@@ -213,7 +213,8 @@ ubyte[] nativeToFins(T)(T val) pure nothrow {
       if (blob.length & 1) {
          blob ~= 0x0;
       }
-      return blob.swapByteOrder!2;
+      blob.swapBy!2;
+      return blob;
    } else static if (is(T == double)) {
       static assert(false, "Unsupported type " ~ T.stringof);
    } else {
@@ -228,6 +229,7 @@ unittest {
    ubyte[] abcFins = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
    ubyte[] abc = nativeToFins!string("ABCDEFGHI");
    assert(equal(abc, abcFins));
+
    assert(equal(nativeToFins!float(3.14), [0xF5, 0xC3, 0x40, 0x48]));
    //0x0a0b0c0d = 168_496_141
    assert(equal(nativeToFins!uint(0x0a0b0c0d), [0x0C, 0x0D, 0x0A, 0xB]));
@@ -244,6 +246,7 @@ unittest {
    assert(nativeToBigEndian!uint(0x010464) == [0x0, 0x01, 0x04, 0x64]);
 
    //0x4048F5C3
+   assert(nativeToBigEndian!float(3.14) == [0x40, 0x48, 0xF5, 0xC3]);
    assert(nativeToBigEndian!float(3.14) == [0x40, 0x48, 0xF5, 0xC3]);
    //0x419D1EB8
    assert(nativeToBigEndian!float(19.64) == [0x41, 0x9D, 0x1E, 0xB8]);
@@ -266,7 +269,6 @@ unittest {
    assert(buf.read!ushort == 0x10);
    assert(approxEqual(buf.read!float, 3.14));
    assert(approxEqual(buf.read!float, 19.64));
-   //assert(approxEqual(buf.read!float, 3.14));
 }
 
 /**
@@ -274,34 +276,44 @@ unittest {
  *
  * Params:
  *  L = Lenght
- *  data = Buffer with values to fix byte order of.
+ *  data = Buffer to swap
  */
-ubyte[] swapByteOrder(int L = 4)(ubyte[] data) @trusted pure nothrow if (L == 2 || L == 4 || L == 0) {
+void swapBy(int L = 2)(ref ubyte[] data) @trusted pure nothrow if (L == 2 || L == 4) {
    import std.algorithm.mutation : swapAt;
+   import std.range : chunks;
 
-   ubyte[] array = data.dup;
-
-   size_t ptr;
-   static if (L == 2) {
-      while (ptr < array.length - 1) {
-         array.swapAt(ptr, ptr + 1);
-         ptr += 2;
-      }
-   } else static if (L == 4) {
-      while (ptr < array.length - 3) {
-         array.swapAt(ptr + 0, ptr + 2);
-         array.swapAt(ptr + 1, ptr + 3);
-         ptr += 4;
+   if (data.length) {
+      auto cs = chunks(data, L);
+      static if (L == 2) {
+         foreach (c; cs) {
+            if (c.length >= L) {
+               c.swapAt(0, 1);
+            }
+         }
+      } else static if (L == 4) {
+         foreach (c; cs) {
+            if (c.length >= L) {
+               c.swapAt(0, 2);
+               c.swapAt(1, 3);
+            }
+         }
       }
    }
-   return array;
 }
 
 ///
 unittest {
    import std.algorithm.comparison : equal;
 
-   ubyte[] a = [0xF5, 0xC3, 0x40, 0x48, 0xFF];
-   assert(a.swapByteOrder.equal([0x40, 0x48, 0xF5, 0xc3, 0xFF]));
-   assert(a.swapByteOrder!(2).equal([0xc3, 0xF5, 0x48, 0x40, 0xFF]));
+   ubyte[] a = [0xF5, 0xC3, 0x40, 0x48, 0xff];
+   swapBy!4(a);
+   assert(a.equal([0x40, 0x48, 0xF5, 0xc3, 0xFF]));
+
+   ubyte[] b = [0xF5, 0xC3, 0x40, 0x48, 0xff];
+   b.swapBy!2;
+   assert(b.equal([0xc3, 0xF5, 0x48, 0x40, 0xFF]));
+
+   ubyte[] e;
+   swapBy(e);
+   assert(e.length == 0);
 }
