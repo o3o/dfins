@@ -1,5 +1,15 @@
 /**
- * Fins client
+ * Fins client.
+ *
+ * There are two command systems that can be used for communications with CV-series PLCs.
+ * The first system is the C-series command system, which can be
+ * used within any one local network. The other system is the CV-series command
+ * system, which uses FINS commands.
+ * The structure of C-series commands, also called C-mode commands, differs
+ * depending on the type of network in which they are used, and thus do not allow
+ * communications to remote networks. FINS commands, also called CV-mode
+ * commands, do allow internetwork communications between network PLCs or
+ * computer nodes. This library implements the FINS command system.
  *
  *	Copyright: © 2016-2026 Orfeo Da Vià.
  *	License: Boost Software License - Version 1.0 - August 17th, 2003
