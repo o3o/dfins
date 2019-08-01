@@ -149,6 +149,7 @@ unittest {
 string readString(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte) && !(L & 1)) {
    import std.algorithm.iteration : filter;
    import std.array : array;
+   /+
 
    ubyte[] bytes = new ubyte[](L);
 
@@ -161,8 +162,11 @@ string readString(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementTy
    }
    bytes.swapBy!2;
    ubyte[] stream = bytes.filter!(a => a > 0x1F && a < 0x7F).array;
+   +/
+   ubyte[] stream = readSwap!(L)(input).filter!(a => a > 0x1F && a < 0x7F).array;
    return cast(string)stream;
 }
+
 ///
 unittest {
    ubyte[] abc00 = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
@@ -187,13 +191,80 @@ unittest {
    assert(s3 == "AB");
 
    ubyte[] abc04 = [0x62, 0x61, 0x01, 0x01, 0x02, 0xFF, 0x68, 0x67, 0x0, 0x49];
-   //import std.stdio;
-   //writeln(abc04.readString!4);
    assert(abc04.length == 10);
    // read 4 byte, but only two are valid ascii char.
    assert(abc04.readString!4 == "ab");
    assert(abc04.length == 6);
+
+   ubyte[] abc05 = [0x42, 0x41, 0x00,  0x44, 0x43, 0x45];
+   //import std.stdio;
+   //writeln(abc05.readString!6 );
+   assert(abc05.readString!6 == "ABDEC");
 }
+
+/**
+ * Takes an input range of ubyte and converts the first $(D L) bytes until null trerminator to string.
+ *
+ * L must be even.
+ * The array is consumed.
+ *
+ * Params:
+ *  L = The number of bytes to convert. L $(B must be) even and will be converted only ascii char
+ *  input = The input range of ubyte to convert
+ */
+string readStringz(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte) && !(L & 1)) {
+   import std.algorithm.searching  : until;
+   ubyte[] stream = readSwap!(L)(input).until(0x0).array;
+   return cast(string)stream;
+}
+
+unittest {
+   ubyte[] abc00 = [0x42, 0x41, 0x0, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
+   string s0 = abc00.readStringz!10;
+   assert(abc00.length == 0);
+   assert(s0.length == 3);
+   assert(s0 == "ABC");
+
+   ubyte[] abc01 = [0x42, 0x41, 0x0, 0x43];
+   string s1 = abc01.readStringz!10;
+   assert(s1.length == 3);
+   assert(s1 == "ABC");
+
+   ubyte[] abc02 = [0x42, 0x41, 0x0, 0x0];
+   string s2 = abc02.readStringz!10;
+   assert(s2.length == 2);
+   assert(s2 == "AB");
+}
+
+/**
+ * Takes an input range of ubyte and swap the first $(D L) bytes.
+ *
+ * L must be even.
+ * The array is consumed.
+ *
+ * Params:
+ *  L = The number of bytes to convert. L $(B must be) even and will be converted only ascii char
+ *  input = The input range of ubyte to convert
+ */
+ubyte[] readSwap(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte) && !(L & 1)) {
+   ubyte[] bytes = new ubyte[](L);
+
+   foreach (ref e; bytes) {
+      if (input.empty) {
+         break;
+      }
+      e = input.front;
+      input.popFront();
+   }
+   bytes.swapBy!2;
+   return bytes;
+}
+
+unittest {
+   ubyte[] blob0 = [0x42, 0x41, 0x00,  0x44, 0x43, 0x45];
+   assert(blob0.readSwap!6 == [0x41, 0x42, 0x44,  0x00, 0x45, 0x43]);
+}
+
 
 /**
  * Converts the given value from the native endianness to Fins format and
@@ -225,6 +296,7 @@ ubyte[] nativeToFins(T)(T val) pure nothrow {
 unittest {
    import std.bitmanip : nativeToBigEndian;
    import std.algorithm.comparison : equal;
+   import core.bitop;
 
    ubyte[] abcFins = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
    ubyte[] abc = nativeToFins!string("ABCDEFGHI");
@@ -236,6 +308,14 @@ unittest {
    assert(equal(nativeToFins!ushort(0x0a0b), [0x0a, 0x0b]));
    ubyte[] ab = [0xa, 0xb];
    assert(equal(cast(ubyte[])nativeToBigEndian!ushort(0x0a0b), ab));
+
+   size_t e;
+   bts(&e, cast(size_t)0);
+   import std.conv: to;
+   ubyte[] ea = nativeToFins!ushort(e.to!ushort);
+   assert(ea.length == 2);
+   assert(ea[0] == 0);
+   assert(ea[1] == 1);
 }
 
 @("PC2PLC")

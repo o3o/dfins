@@ -61,9 +61,15 @@ void main(string[] args) {
          ubyte[] ss = f.readArea(MemoryArea.DM, 30_006, 10);
          writefln("DM30_006: %( 0x%x %)", ss);
          writefln("DM30_006: %s", ss.readString!20);
-      }  else if (args[1] == "d") {
-         ubyte[] dd = f.readArea(MemoryArea.DM, 30_026, 2);
-         writefln("DM30_026: %( 0x%x %)", dd);
+      }  else if (args[1] == "b") {
+         import core.bitop;
+         ubyte[] dd = f.readArea(MemoryArea.DM, 2_000, 1);
+         ulong a = dd.readFins!ushort;
+         for (size_t i = 0; i < 15; ++i) {
+            writefln("bit:%s %s", i, bt(&a, i));
+         }
+      }  else if (args[1] == "b") {
+
       } else {
          help;
       }
@@ -83,4 +89,5 @@ void help() {
    writeln("\ts: read 32_006 as string");
    writeln("\td: read 32_026 as DWORD");
    writeln("\twf x: write x into 32_000 as float");
+   writeln("\td: test 2_0000 as bit");
 }
