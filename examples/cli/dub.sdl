@@ -1,0 +1,10 @@
+name "ficli"
+description "Simple cli with fins"
+targetType "executable"
+authors "Orfeo Da Viá"
+copyright "Copyright © 2019, o3o"
+license "Boost License"
+
+dependency "dfins" path="../../"
+sourceFiles "app.d"
+sourcePaths "."
