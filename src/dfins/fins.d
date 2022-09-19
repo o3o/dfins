@@ -20,7 +20,7 @@ module dfins.fins;
 import dfins.channel;
 
 /**
- * Fins protocol exception
+ * Fins protocol exception.
  */
 class FinsException : Exception {
    /**
@@ -58,7 +58,9 @@ class FinsException : Exception {
 }
 
 /**
- * Memory area code. See page 15 of $(I FINS Commands reference manual)
+ * Memory area code.
+ *
+ * See page 15 of $(I FINS Commands reference manual)
  */
 enum MemoryArea : ubyte {
    CIO_BIT = 0x30,
@@ -221,7 +223,7 @@ unittest {
 }
 
 /**
- * Convert an `Header` to array of bytes.
+ * Convert an [Header] to array of bytes.
  */
 ubyte[] toBytes(Header data) {
    enum RSV = 0x0;
@@ -425,7 +427,7 @@ class FinsClient {
    }
 
    /**
-    * Read an Omron PLC area
+    * Read an Omron PLC area.
     *
     * Params:
     *  area = The area type

@@ -1,5 +1,5 @@
 /**
- * Utility functions to convert PLC words
+ * Utility functions to convert PLC words.
  *
  *	Copyright: © 2016-2026 Orfeo Da Vià.
  *	License: Boost Software License - Version 1.0 - August 17th, 2003
@@ -11,7 +11,7 @@ import std.range;
 import std.system : Endian;
 
 /**
- * Converts ushort value into BDC format
+ * Converts ushort value into BDC format.
  *
  * Params:
  *  dec = ushort in decimal format
@@ -149,20 +149,7 @@ unittest {
 string readString(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte) && !(L & 1)) {
    import std.algorithm.iteration : filter;
    import std.array : array;
-   /+
 
-   ubyte[] bytes = new ubyte[](L);
-
-   foreach (ref e; bytes) {
-      if (input.empty) {
-         break;
-      }
-      e = input.front;
-      input.popFront();
-   }
-   bytes.swapBy!2;
-   ubyte[] stream = bytes.filter!(a => a > 0x1F && a < 0x7F).array;
-   +/
    ubyte[] stream = readSwap!(L)(input).filter!(a => a > 0x1F && a < 0x7F).array;
    return cast(string)stream;
 }
@@ -203,7 +190,7 @@ unittest {
 }
 
 /**
- * Takes an input range of ubyte and converts the first $(D L) bytes until null trerminator to string.
+ * Takes an input range of ubyte and converts the first $(D L) bytes or until null terminator is found, to string.
  *
  * L must be even.
  * The array is consumed.
@@ -269,6 +256,11 @@ unittest {
 /**
  * Converts the given value from the native endianness to Fins format and
  * returns it as a `ubyte[n]` where `n` is the size of the given type.
+ *
+ * Params:
+ *  T = Value type
+ *  val = Value to be converted
+ *
  */
 ubyte[] nativeToFins(T)(T val) pure nothrow {
    import std.bitmanip : nativeToBigEndian;

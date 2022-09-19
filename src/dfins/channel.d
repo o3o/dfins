@@ -12,7 +12,7 @@ import core.time : dur;
 import std.socket;
 
 /**
- * Timeout exception
+ * Timeout exception.
  */
 class ChannelTimeoutException : Exception {
    this(string msg, string ip, const(ubyte[]) messageSent, string file = null, size_t line = 0) @trusted {
@@ -42,7 +42,9 @@ unittest {
    assert(ex.msg == "message -- PLC ip 192.168.221.1");
 }
 
-
+/**
+ * Describes a generic channel
+ */
 interface IChannel {
    ubyte[] send(const(ubyte[]) msg);
 }
@@ -99,7 +101,7 @@ class UdpChannel : IChannel {
 }
 
 /**
- * Convenience functions that create an `IChannel` object
+ * Convenience function which return an initializated [IChannel] object.
  *
  * Params:
  *  ip = IP address
