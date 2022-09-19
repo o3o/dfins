@@ -112,30 +112,6 @@ T readFins(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const u
    }
 }
 
-unittest {
-   import std.bitmanip : read;
-   import std.math : approxEqual;
-
-   // dfmt off
-   ubyte[] buf = [
-      0x0, 0x10,
-      0xF5, 0xC3, 0x40, 0x48, // 3.14
-      0x1E, 0xB8, 0x41, 0x9D, // 19.64
-      0xF5, 0xC3, 0x40, 0x48, // 1_078_523_331
-      0xF5, 0xC3, 0x40, 0x48, // 1_078_523_331
-      0x0A, 0x3D, 0xBF, 0xB7,
-      0x0C, 0x0D, 0x0A, 0xB // 0x0a0b0c0d
-   ];
-   // dfmt on
-   assert(buf.readFins!ushort == 0x10);
-   assert(approxEqual(buf.readFins!float, 3.14));
-   assert(approxEqual(buf.readFins!float, 19.64));
-   assert(buf.readFins!uint == 1_078_523_331);
-   assert(buf.readFins!int == 1_078_523_331);
-   assert(buf.readFins!int == -1_078_523_331);
-   assert(buf.readFins!uint == 0x0a0b0c0d);
-}
-
 /**
  * Takes an input range of ubyte and converts the first $(D L) bytes to string.
  *
@@ -205,24 +181,6 @@ string readStringz(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementT
    return cast(string)stream;
 }
 
-unittest {
-   ubyte[] abc00 = [0x42, 0x41, 0x0, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
-   string s0 = abc00.readStringz!10;
-   assert(abc00.length == 0);
-   assert(s0.length == 3);
-   assert(s0 == "ABC");
-
-   ubyte[] abc01 = [0x42, 0x41, 0x0, 0x43];
-   string s1 = abc01.readStringz!10;
-   assert(s1.length == 3);
-   assert(s1 == "ABC");
-
-   ubyte[] abc02 = [0x42, 0x41, 0x0, 0x0];
-   string s2 = abc02.readStringz!10;
-   assert(s2.length == 2);
-   assert(s2 == "AB");
-}
-
 /**
  * Takes an input range of ubyte and swap the first $(D L) bytes.
  *
@@ -246,12 +204,11 @@ ubyte[] readSwap(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementTyp
    bytes.swapBy!2;
    return bytes;
 }
-
+///
 unittest {
    ubyte[] blob0 = [0x42, 0x41, 0x00,  0x44, 0x43, 0x45];
    assert(blob0.readSwap!6 == [0x41, 0x42, 0x44,  0x00, 0x45, 0x43]);
 }
-
 
 /**
  * Converts the given value from the native endianness to Fins format and
@@ -283,64 +240,6 @@ ubyte[] nativeToFins(T)(T val) pure nothrow {
    } else {
       return nativeToBigEndian!T(val).dup;
    }
-}
-
-unittest {
-   import std.bitmanip : nativeToBigEndian;
-   import std.algorithm.comparison : equal;
-   import core.bitop;
-
-   ubyte[] abcFins = [0x42, 0x41, 0x44, 0x43, 0x46, 0x45, 0x48, 0x47, 0x0, 0x49];
-   ubyte[] abc = nativeToFins!string("ABCDEFGHI");
-   assert(equal(abc, abcFins));
-
-   assert(equal(nativeToFins!float(3.14), [0xF5, 0xC3, 0x40, 0x48]));
-   //0x0a0b0c0d = 168_496_141
-   assert(equal(nativeToFins!uint(0x0a0b0c0d), [0x0C, 0x0D, 0x0A, 0xB]));
-   assert(equal(nativeToFins!ushort(0x0a0b), [0x0a, 0x0b]));
-   ubyte[] ab = [0xa, 0xb];
-   assert(equal(cast(ubyte[])nativeToBigEndian!ushort(0x0a0b), ab));
-
-   size_t e;
-   bts(&e, cast(size_t)0);
-   import std.conv: to;
-   ubyte[] ea = nativeToFins!ushort(e.to!ushort);
-   assert(ea.length == 2);
-   assert(ea[0] == 0);
-   assert(ea[1] == 1);
-}
-
-@("PC2PLC")
-unittest {
-   import std.bitmanip : nativeToBigEndian;
-
-   assert(nativeToBigEndian!uint(0x8034) == [0, 0, 0x80, 0x34]);
-   assert(nativeToBigEndian!uint(0x010464) == [0x0, 0x01, 0x04, 0x64]);
-
-   //0x4048F5C3
-   assert(nativeToBigEndian!float(3.14) == [0x40, 0x48, 0xF5, 0xC3]);
-   assert(nativeToBigEndian!float(3.14) == [0x40, 0x48, 0xF5, 0xC3]);
-   //0x419D1EB8
-   assert(nativeToBigEndian!float(19.64) == [0x41, 0x9D, 0x1E, 0xB8]);
-}
-
-@("PLC2PC")
-unittest {
-   import std.bitmanip : read;
-   import std.math : approxEqual;
-
-   // dfmt off
-   ubyte[] buf = [
-      0x0, 0x10,
-      0x40, 0x48, 0xF5, 0xC3, // 3.14
-      0x41, 0x9D, 0x1E, 0xB8, // 19.64
-      0xF5, 0xC3, 0x40, 0x48,
-   ];
-   // dfmt on
-   //assert(buf.peek!ushort == 0x10);
-   assert(buf.read!ushort == 0x10);
-   assert(approxEqual(buf.read!float, 3.14));
-   assert(approxEqual(buf.read!float, 19.64));
 }
 
 /**
