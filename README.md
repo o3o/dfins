@@ -1,8 +1,5 @@
 # dfins
-
-This is an implementation of the OMRON FINS protocol using [D](https://dlang.org/)
-
-
+This is an implementation of the OMRON FINS protocol using [D](https://dlang.org/).
 
 ## Usage
 The `examples` sub directory contains examples explaining how use this library.

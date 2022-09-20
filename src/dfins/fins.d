@@ -20,7 +20,7 @@ module dfins.fins;
 import dfins.channel;
 
 /**
- * Fins protocol exception
+ * Fins protocol exception.
  */
 class FinsException : Exception {
    /**
@@ -58,7 +58,9 @@ class FinsException : Exception {
 }
 
 /**
- * Memory area code. See page 15 of $(I FINS Commands reference manual)
+ * Memory area code.
+ *
+ * See page 15 of $(I FINS Commands reference manual)
  */
 enum MemoryArea : ubyte {
    CIO_BIT = 0x30,
@@ -173,17 +175,6 @@ Header header(ubyte dstNodeNumber, ubyte srcNodeNumber = 0x02) {
    return h;
 }
 
-unittest {
-   immutable(Header) hdr = header(0x11);
-   assert(hdr.icf == 0x80);
-   assert(hdr.dna == 0x0);
-   assert(hdr.da1 == 0x11);
-   assert(hdr.sa1 == 0x02);
-   immutable(Header) hdr2 = header(0x10, 0x42);
-   assert(hdr2.da1 == 0x10);
-   assert(hdr2.sa1 == 0x42);
-}
-
 /**
  * Get subnet (`da1`) from ip address.
  *
@@ -207,6 +198,7 @@ ubyte getSubnet(string ip) @safe {
    return m[4].to!ubyte;
 }
 
+///
 unittest {
    import std.exception : assertThrown;
 
@@ -221,7 +213,7 @@ unittest {
 }
 
 /**
- * Convert an `Header` to array of bytes.
+ * Convert an [Header] to array of bytes.
  */
 ubyte[] toBytes(Header data) {
    enum RSV = 0x0;
@@ -240,28 +232,6 @@ ubyte[] toBytes(Header data) {
    b ~= data.mainRqsCode;
    b ~= data.subRqsCode;
    return b;
-}
-
-unittest {
-   Header data;
-   data.dna = 0;
-   data.da1 = 0x16;
-   data.da2 = 0;
-   data.sna = 0;
-   data.sa1 = 0x02;
-   data.sa2 = 0;
-   data.mainRqsCode = 0x01;
-   data.subRqsCode = 0x01;
-
-   ubyte[] exp = [0x80, 0x00, 0x02, 0x00, 0x16, 0x0, 0x00, 0x02, 0x0, 0x0, 0x01, 0x01];
-   auto b = data.toBytes;
-   assert(b.length == FINS_HEADER_LEN);
-
-   import std.conv : to;
-
-   for (int i = 0; i < FINS_HEADER_LEN; ++i) {
-      assert(b[i] == exp[i], i.to!string());
-   }
 }
 
 /**
@@ -284,21 +254,6 @@ do {
    h.mainRqsCode = blob[10];
    h.subRqsCode = blob[11];
    return h;
-}
-
-unittest {
-   ubyte[] blob = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02];
-   immutable(Header) h = blob.toHeader;
-   assert(h.icf == 0xC0);
-   assert(h.dna == 0x0);
-   assert(h.da1 == 0x2);
-   assert(h.da2 == 0x0);
-   assert(h.sna == 0x0);
-   assert(h.sa1 == 0x16);
-   assert(h.sa2 == 0x0);
-   assert(h.sid == 0x0);
-   assert(h.mainRqsCode == 0x01);
-   assert(h.subRqsCode == 0x02);
 }
 
 ///
@@ -335,37 +290,6 @@ do {
    resp.subRspCode = data[13];
    resp.text = data[14 .. $];
    return resp;
-}
-
-unittest {
-   // dfmt off
-   ubyte[] blob = [
-      0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02,
-      0x42, 0x43,  // rsp code
-      0x64, 0x65, 0x66, 0x67, 0x68, 0x69 // data
-   ];
-   // dfmt on
-   ResponseData r = blob.toResponse;
-   assert(r.header.icf == 0xC0);
-   assert(r.header.dna == 0x0);
-   assert(r.header.da1 == 0x2);
-   assert(r.header.da2 == 0x0);
-   assert(r.header.sna == 0x0);
-   assert(r.header.sa1 == 0x16);
-   assert(r.header.sa2 == 0x0);
-   assert(r.header.sid == 0x0);
-   assert(r.header.mainRqsCode == 0x01);
-   assert(r.header.subRqsCode == 0x02);
-
-   assert(r.mainRspCode == 0x42);
-   assert(r.subRspCode == 0x43);
-   assert(r.text == [0x64, 0x65, 0x66, 0x67, 0x68, 0x69]);
-
-   //import std.exception : assertThrown;
-   //ubyte[] invalid = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02];
-   //assertThrown( invalid.toResponse());
-   ubyte[] nodata = [0xc0, 0x0, 0x02, 0x0, 0x02, 0x0, 0x0, 0x16, 0x0, 0x0, 0x01, 0x02, 0x42, 0x43];
-   assert(nodata.toResponse.text == []);
 }
 
 /**
@@ -425,7 +349,7 @@ class FinsClient {
    }
 
    /**
-    * Read an Omron PLC area
+    * Read an Omron PLC area.
     *
     * Params:
     *  area = The area type
