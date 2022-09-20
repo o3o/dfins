@@ -38,7 +38,7 @@ void main(string[] args) {
             ushort addr = md[1].to!ushort;
             ubyte[] d0 = f.readArea(MemoryArea.DM, addr, 1);
             writefln("%( 0x%x %)", d0);
-            writefln(">BCD%s %d", addr, d0.readFins!ushort.toBCD);
+            writefln(">BCD%s %d", addr, d0.readFins!ushort.fromBCD);
          } else if (mf) {
             ushort addr = mf[1].to!ushort;
             ubyte[] d0 = f.readArea(MemoryArea.DM, addr, 2);
@@ -61,8 +61,6 @@ void main(string[] args) {
 void help() {
    writeln("USE:");
    writeln("\tr0: read D000");
-   writeln("\tr1: read D001");
-   writeln("\tr100: read D100");
-   writeln("\tr1100: read D1100");
+   writeln("\tr 1100: read D1100");
    writeln("\tw0: write 0x0a0b into D00");
 }
