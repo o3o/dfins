@@ -43,9 +43,12 @@ unittest {
 }
 
 /**
- * Describes a generic channel
+ * Describes a generic channel.
  */
 interface IChannel {
+   /**
+    * Send a message and wait for a reply
+    */
    ubyte[] send(const(ubyte[]) msg);
 }
 
@@ -63,9 +66,6 @@ class UdpChannel : IChannel {
       this.address = address;
    }
 
-   /**
-    * Send a message and wait for a reply
-    */
    ubyte[] send(const(ubyte[]) msg) {
       int attempt;
       while (true) {
@@ -106,7 +106,7 @@ class UdpChannel : IChannel {
  * Params:
  *  ip = IP address
  *  timeout = Send and recieve timeout in ms
- *  port = Port number (defaul 9600)
+ *  port = Port number (default 9600)
  */
 IChannel createUdpChannel(string ip, long timeout, ushort port = 9600)
 in {
