@@ -47,12 +47,12 @@ unittest {
 }
 
 /**
- * Converts BCD value into decimal format
+ * Converts BCD value into decimal format.
  *
  * Params:
- *  bcd = ushort in BCD format
+ *  bcd = ushort in BCD format.
  *
- * Returns: decimal value
+ * Returns: decimal value.
  */
 ushort fromBCD(ushort bcd) {
    enum int NO_OF_DIGITS = 8;
@@ -89,12 +89,12 @@ unittest {
  * The array is consumed.
  *
  * Params:
- *  T = The type to convert the first `T.sizeof` bytes
- *  input = The input range of ubyte to convert
+ *  T = The type to convert the first `T.sizeof` bytes.
+ *  input = The input range of ubyte to convert.
  */
 T readFins(T, R)(ref R input) if ((isInputRange!R) && is(ElementType!R : const ubyte)) {
-   import std.bitmanip : read, bigEndianToNative;
    import std.algorithm.mutation : swapAt;
+   import std.bitmanip : read, bigEndianToNative;
 
    static if (is(T == int) || is(T == uint) || is(T == float)) {
       ubyte[T.sizeof] bytes;
@@ -208,6 +208,10 @@ ubyte[] readSwap(size_t L, R)(ref R input) if ((isInputRange!R) && is(ElementTyp
 unittest {
    ubyte[] blob0 = [0x42, 0x41, 0x00,  0x44, 0x43, 0x45];
    assert(blob0.readSwap!6 == [0x41, 0x42, 0x44,  0x00, 0x45, 0x43]);
+   assert(blob0.length == 0);
+   ubyte[] blob1 = [0x42, 0x41, 0x00,  0x44, 0x43, 0x45];
+   assert(blob1.readSwap!2 == [0x41, 0x42]);
+   assert(blob1.length == 4);
 }
 
 /**
@@ -215,13 +219,12 @@ unittest {
  * returns it as a `ubyte[n]` where `n` is the size of the given type.
  *
  * Params:
- *  T = Value type
- *  val = Value to be converted
- *
+ *  T = Value type.
+ *  val = Value to be converted.
  */
 ubyte[] nativeToFins(T)(T val) pure nothrow {
-   import std.bitmanip : nativeToBigEndian;
    import std.algorithm.mutation : swapAt;
+   import std.bitmanip : nativeToBigEndian;
 
    static if (is(T == int) || is(T == uint) || is(T == float)) {
       ubyte[] bytes = nativeToBigEndian!T(val).dup;
@@ -246,8 +249,8 @@ ubyte[] nativeToFins(T)(T val) pure nothrow {
  * Swap byte order of items in an array.
  *
  * Params:
- *  L = Lenght
- *  data = Buffer to swap
+ *  L = Lenght.
+ *  data = Buffer to swap.
  */
 void swapBy(int L = 2)(ref ubyte[] data) @trusted pure nothrow if (L == 2 || L == 4) {
    import std.algorithm.mutation : swapAt;

@@ -18,3 +18,5 @@ examples/readdm/readdn
 generated-docs/
 build/
 skeleton.html
+examples/cli/.vim-bookmarks
+.vim-bookmarks

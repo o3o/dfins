@@ -85,4 +85,10 @@ unittest {
    nodata.toResponse.text.length.should == 0;
 }
 
-
+@("mainErrToString")
+unittest {
+   mainErrToString(0x01).should == "Local node error";
+   mainErrToString(0x02).should == "Destination node error";
+   mainErrToString(0x03).should == "Communications controller error";
+   mainErrToString(0x04).should == "Not executable";
+}

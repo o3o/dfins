@@ -7,8 +7,8 @@
  */
 module dfins.channel;
 
-import std.experimental.logger;
 import core.time : dur;
+import std.experimental.logger;
 import std.socket;
 
 /**
@@ -105,7 +105,7 @@ class UdpChannel : IChannel {
  *
  * Params:
  *  ip = IP address
- *  timeout = Send and recieve timeout in ms
+ *  timeout = Send and receieve timeout in ms
  *  port = Port number (default 9600)
  */
 IChannel createUdpChannel(string ip, long timeout, ushort port = 9600)

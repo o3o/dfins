@@ -1,7 +1,7 @@
 name "dfins"
 description "D library for Omron FINS protocol"
-authors "Orfeo Da Viá"
-copyright "Copyright © 2019, Orfeo Da Viá"
+authors "Orfeo Da Vià"
+copyright "Copyright © 2019, Orfeo Da Vià"
 license "Boost"
 
 
@@ -12,12 +12,12 @@ configuration "library" {
 configuration "unittest" {
    targetName "ut"
    targetType "executable"
-   mainSourceFile "tests/ut_main.d"
-   excludedSourceFiles "tests/it/ut_main.d"
+   mainSourceFile "tests/main.d"
+   excludedSourceFiles "tests/it/main.d"
    sourcePaths "tests"
    importPaths "tests"
 
-   dependency "unit-threaded" version="~>2.0.5"
+   dependency "unit-threaded" version="*"
 }
 
 configuration "ut_def" {
@@ -27,7 +27,7 @@ configuration "ut_def" {
 configuration "integration" {
     targetName "it"
     targetType "executable"
-    mainSourceFile "tests/it/ut_main.d"
+    mainSourceFile "tests/it/main.d"
     sourcePaths "tests/it"
     importPaths "tests"
 

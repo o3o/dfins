@@ -97,14 +97,21 @@ enum MemoryArea : ubyte {
 ///
 enum FINS_HEADER_LEN = 12;
 
-///
+/**
+ * Command/REsponse transmission data.
+ *
+ * Describes the structure of the header data used for FINS com mands and responses.
+ *
+ * See pag. 6 of
+ *
+ * RSV GCT are omitted because they are constants (RSV=00, GCT=02)
+ */
 struct Header {
    /**
     * Information Control Field, set to 0x80
     */
    ubyte icf = 0x80;
-   //ubyte rsv;//reserved, set to 0x00
-   //ubyte gct = 0x02;//gateway count, set to 0x02
+   // RSV GCT
    /**
     * Destination network address, 0x0 local , 0x01 if there are not network intermediaries
     */
@@ -112,41 +119,79 @@ struct Header {
    /**
     * Destination node number.
     *
-    * If set to default this is the subnet byte of the ip of the plc
+    * Specify within the following ranges:
+    * $(LIST
+    *  * 01 to 7E: Node number in SYSMAC NET network
+    *  * 01 to 3E: Node number in SYSMAC LINK network
+    *  * FF: Broadcast transmission
+    *  )
+    *
+    *
+    * If set to default this is the subnet byte of the ip of the plc.
     * Examples:
     * --------------------
     * ex. 192.168.0.1 -> 0x01
     * --------------------
     */
    ubyte da1;
+
    /**
-    * Destination unit number
+    * Destination unit address.
+    * Specify within the following ranges:
+    *
+    * $(LIST
+    * * 00: PC (CPU)
+    * * FE: SYSMAC NET Link Unit or SYSMAC LINK Unit connected to network
+    * * 10 to 1F: CPU Bus Unit (10 + unit number in hexadecimal)
+    * )
     *
     * The unit number, see the hardware config of plc, generally 0x00
     */
    ubyte da2;
+
    /**
-    * Source network
+    * Source network.
     *
-    * generally 0x01
+    * Specify within the following ranges:
+    * $(LIST
+    *  * 00: Local network
+    *  * 01 to 7F: Remote network (1 to 127 decimal)
+    * )
+    *
+    * Generally 0x01
     */
    ubyte sna;
+
    /**
     * Source node number.
     *
-    * Like the destination node number, you could set a fixed number into plc config
+    * Specify within the following ranges:
+    * $(LIST
+    *  * 01 to 7E: Node number in SYSMAC NET network
+    *  * 01 to 3E: Node number in SYSMAC LINK network
+    *  * FF: Broadcast transmission
+    *  )
+    *
+    * Like the destination node number, you could set a fixed number into PLC config.
     */
    ubyte sa1 = 0x02;
    /**
     * Source unit number.
+    * Specify within the following ranges:
+    * $(LIST
+    *   * 00: PC (CPU)
+    *   * FE: SYSMAC NET Link Unit or SYSMAC LINK Unit connected to network
+    *   * 10 to 1F: CPU Bus Unit (10 + unit number in hexadecimal)
+    * )
     *
     * Like the destination unit number.
     */
    ubyte sa2;
    /**
-    * Counter for the resend.
+    * Service ID.
     *
-    * Generally 0x00
+    * Used to identify the processing generating the transmission.
+    * Set the SID to any number between 00 and FF
     */
    ubyte sid;
    /**
@@ -162,11 +207,11 @@ struct Header {
 /**
  * Convenience function for creating an `Header` with destination node number (`da1`) and source node number (`sa1`).
  *
- * `da1` is the subnet byte of the ip of the plc
+ * `da1` is the subnet byte of the ip of the PLC.
  *
  * Params:
- *  dstNodeNumber = Destination node number
- *  srcNodeNumber = Source node number
+ *  dstNodeNumber = Destination node number (da1).
+ *  srcNodeNumber = Source node number (sa1).
  */
 Header header(ubyte dstNodeNumber, ubyte srcNodeNumber = 0x02) {
    Header h;
@@ -187,9 +232,9 @@ Header header(ubyte dstNodeNumber, ubyte srcNodeNumber = 0x02) {
  * --------------------
  */
 ubyte getSubnet(string ip) @safe {
-   import std.regex : regex, matchFirst;
    import std.conv : to;
    import std.exception : enforce;
+   import std.regex : regex, matchFirst;
 
    auto ipReg = regex(
          r"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
@@ -323,7 +368,7 @@ class FinsClient {
    }
 
    /**
-    * Write an Omron PLC area: the area must be defined as CJ like area
+    * Write an Omron PLC area: the area must be defined as CJ like area.
     *
     * Params:
     *  area = The area type
@@ -352,7 +397,7 @@ class FinsClient {
     * Read an Omron PLC area.
     *
     * Params:
-    *  area = The area type
+    *  area = The area type.
     *  start = The start offset for the read process.
     *  size = The size of the area to read. IMPORTANT: The size is expressed in WORD (2 byte)
     *
@@ -386,7 +431,7 @@ class FinsClient {
 /**
  * Converts main error code into string
  */
-string mainErrToString(ubyte mainErr) {
+string mainErrToString(in ubyte mainErr) pure {
    switch (mainErr) {
       case 0x01:
          return "Local node error";
